@@ -1,0 +1,1 @@
+{"name":"MiningOperation.Asteroids.Tests","rootNamespace":"MiningOperation.Asteroids.Tests","references":["MiningOperation.Asteroids.Runtime"],"optionalUnityReferences":["TestAssemblies"],"includePlatforms":["Editor"],"overrideReferences":true,"precompiledReferences":["nunit.framework.dll"],"autoReferenced":false,"defineConstraints":["UNITY_INCLUDE_TESTS"]}

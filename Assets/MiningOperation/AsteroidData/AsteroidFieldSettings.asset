@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd905e09664f04164847f7e2d6ae236a, type: 3}
+  m_Name: AsteroidFieldSettings
+  m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidFieldSettings
+  asteroidSettings: {fileID: 11400000, guid: e1042be015206465f84ef965e43390cf, type: 2}
+  asteroidMaterial: {fileID: 2100000, guid: 9216c477cbc82464a9d578960a1df207, type: 2}
+  formation: 5
+  asteroidCount: 120
+  radiusMeters: 8500
+  thicknessMeters: 1800
+  arcDegrees: 180
+  cloudVerticalScale: 0.65
+  clusterCount: 4
+  clusterRadiusFraction: 0.16
+  minimumSurfaceGapMeters: 100
+  placementAttempts: 75
+  spawnDistanceMeters: 13000
+  despawnDistanceMeters: 16000
+  generatePerFrame: 2
+  instantiatePerFrame: 1
+  maxActiveAsteroids: 120
+  meshColliders: 0
+  hideDepletedAsteroids: 1

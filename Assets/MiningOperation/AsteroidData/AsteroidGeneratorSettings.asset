@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: AsteroidGeneratorSettings
+  m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime:MiningOperation.Asteroids:AsteroidGeneratorSettings
+  catalog: {fileID: 11400000, guid: 10c6a4aab08db4b33a6b60aa03ca7954, type: 2}
+  minimumDiameterMeters: 12
+  maximumDiameterMeters: 240
+  shapeIrregularity: 0.55
+  craterIntensity: 0.55
+  surfaceRoughness: 0.45
+  minCraters: 2
+  maxCraters: 18
+  minimumResources: 2
+  maximumResources: 5
+  classIIProbability: 0.25
+  classIIIProbability: 0.07
+  rareChanceClassII: 0.25
+  rareChanceClassIII: 0.65
+  exoticChanceClassIII: 0.22
+  minimumAxisScale: 0.48
+  minimumPorosity: 0.07
+  maximumPorosity: 0.27
+  maximumRareFractionClassII: 0.08
+  maximumRareFractionClassIII: 0.16
+  maximumExoticFractionClassIII: 0.025
+  lod0Subdivisions: 4
+  lod1Subdivisions: 3
+  lod2Subdivisions: 2
+  volumeSubdivisions: 4

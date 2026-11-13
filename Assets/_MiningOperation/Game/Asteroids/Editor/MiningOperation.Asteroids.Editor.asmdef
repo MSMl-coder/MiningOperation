@@ -1,0 +1,1 @@
+{"name":"MiningOperation.Asteroids.Editor","rootNamespace":"MiningOperation.Asteroids.Editor","references":["MiningOperation.Asteroids.Runtime"],"includePlatforms":["Editor"],"autoReferenced":true}
