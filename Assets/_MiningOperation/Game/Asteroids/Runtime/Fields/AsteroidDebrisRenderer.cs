@@ -44,8 +44,9 @@ namespace MiningOperation.Asteroids
             if (snapshot?.asteroids == null || snapshot.asteroids.Count == 0 ||
                 settings == null || !settings.enableDecorativeDebris || !SystemInfo.supportsInstancing) return;
             material = AsteroidStableMaterials.Create(settings.distantMaterial,
-                settings.allowExperimentalRockShaders, new Color(0.58f, 0.62f, 0.65f, 1f),
-                "MO Debris Stable URP (runtime)");
+                settings.allowExperimentalRockShaders, new Color(.78f, .80f, .80f, 1f),
+                "MO Debris Stable URP (runtime)",
+                settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
             if (material == null) return;
             material.enableInstancing = true;
             material.hideFlags = HideFlags.DontSave;
@@ -128,7 +129,7 @@ namespace MiningOperation.Asteroids
                     Array.Resize(ref batches[variant], Mathf.Min(fragments.Count, count * 2));
                 Quaternion rotation = settings.enableAsteroidRotation ?
                     AsteroidSpin.Evaluate(fragment.rotation, fragment.spinSeed,
-                        fragment.diameter, simulationSeconds, settings.rotationSpeedMultiplier * 0.45f) :
+                        fragment.diameter, simulationSeconds, settings.rotationSpeedMultiplier * settings.decorativeRotationMultiplier) :
                     fragment.rotation;
                 batches[variant][count] = parent * Matrix4x4.TRS(fragment.localPosition,
                     rotation, Vector3.one * fragment.diameter);

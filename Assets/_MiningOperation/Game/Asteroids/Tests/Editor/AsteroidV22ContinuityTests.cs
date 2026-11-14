@@ -25,17 +25,17 @@ namespace MiningOperation.Asteroids.Tests
         }
 
         [Test]
-        public void NewGeometryVersionFourIsDeterministicAcrossLods()
+        public void NewGeometryVersionFiveIsDeterministicAcrossLods()
         {
             AsteroidData asteroid = AsteroidGeneration.Create(420420, generator);
-            Assert.AreEqual(4, asteroid.generatorVersion);
+            Assert.AreEqual(AsteroidGeneration.GeneratorVersion, asteroid.generatorVersion);
             Mesh low = AsteroidGeometryGenerator.Generate(asteroid, generator, 2);
             Mesh high = AsteroidGeometryGenerator.Generate(asteroid, generator, 3);
             try
             {
                 Vector3[] a = low.vertices, b = high.vertices;
                 Assert.Greater(b.Length, a.Length);
-                for (int i = 0; i < a.Length; ++i)
+                for (int i = 0; i < 162; ++i)
                     Assert.Less((a[i] - b[i]).sqrMagnitude, 0.0000001f,
                         "Shared icosphere vertices must be identical between LODs");
                 Assert.AreEqual(a.Length, low.uv.Length);

@@ -165,13 +165,27 @@ namespace MiningOperation.Asteroids.Tests
             try
             {
                 Assert.Greater(AsteroidGeneration.CalculateVolume(mesh), 0);
+                // Rendering UV seams duplicate *indices*, not positions. Weld exact
+                // coincident positions before checking geometric watertightness.
+                var canonical = new Dictionary<Vector3, int>();
+                Vector3[] positions = mesh.vertices;
+                int[] welded = new int[positions.Length];
+                for (int i = 0; i < positions.Length; i++)
+                {
+                    if (!canonical.TryGetValue(positions[i], out int representative))
+                    {
+                        representative = canonical.Count;
+                        canonical.Add(positions[i], representative);
+                    }
+                    welded[i] = representative;
+                }
                 var edges = new Dictionary<ulong, int>();
                 int[] tri = mesh.triangles;
                 for (int i = 0; i < tri.Length; i += 3)
                 {
-                    CountEdge(tri[i], tri[i + 1], edges);
-                    CountEdge(tri[i + 1], tri[i + 2], edges);
-                    CountEdge(tri[i + 2], tri[i], edges);
+                    CountEdge(welded[tri[i]], welded[tri[i + 1]], edges);
+                    CountEdge(welded[tri[i + 1]], welded[tri[i + 2]], edges);
+                    CountEdge(welded[tri[i + 2]], welded[tri[i]], edges);
                 }
                 foreach (var pair in edges) Assert.AreEqual(2, pair.Value);
             }

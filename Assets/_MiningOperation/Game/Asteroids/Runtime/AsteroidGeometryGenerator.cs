@@ -59,16 +59,33 @@ namespace MiningOperation.Asteroids
                     for (int i = 0; i < legacyColors.Length; i++)
                         legacyColors[i] = new Color32(255, 255, 255, 255);
                     legacyMesh.colors32 = legacyColors;
+                    AsteroidSurfaceUV.Apply(legacyMesh, data.seed);
                 }
                 return legacyMesh;
             }
-            if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4) || data.geometryProfile == null)
+            if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4 && data.generatorVersion != 5) || data.geometryProfile == null)
                 throw new InvalidOperationException("Unsupported asteroid geometry version or missing shape profile.");
-            Mesh mesh = GenerateV2(data.seed, data.diameterMeters, data.geometryProfile, subdivisions, visualColors);
-            if (data.generatorVersion >= 3)
-                AsteroidGeologyV3.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
-            if (data.generatorVersion >= 4)
-                AsteroidGeologyV4.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+            // V5 is a new immutable recipe: large impacts, fewer ripples.
+            // Versions 1..4 follow their EXACT original pipelines for save compatibility.
+            AsteroidGeometryProfile working = data.geometryProfile;
+            if (data.generatorVersion == 5)
+            {
+                working = data.geometryProfile.Copy();
+                working.surfaceRoughness *= .22f;
+                working.craterIntensity *= .62f; // base V2 craters are only background variation
+                working.minCraters = Mathf.Min(working.minCraters, 3);
+                working.maxCraters = Mathf.Min(working.maxCraters, 7);
+            }
+            Mesh mesh = GenerateV2(data.seed, data.diameterMeters, working, subdivisions, visualColors);
+            if (data.generatorVersion == 5)
+                AsteroidGeologyV5.Apply(mesh, data.seed, data.geometryProfile);
+            else
+            {
+                if (data.generatorVersion >= 3)
+                    AsteroidGeologyV3.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+                if (data.generatorVersion >= 4)
+                    AsteroidGeologyV4.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+            }
             if (visualColors) AsteroidSurfaceUV.Apply(mesh, data.seed);
             return mesh;
         }

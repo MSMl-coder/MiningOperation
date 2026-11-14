@@ -36,7 +36,16 @@ namespace MiningOperation.Asteroids
         [Range(32, 1000)] public int maxFarRenderDraws = 300;
         [Range(0.5f, 10f)] public float farBuildBudgetMs = 2f;
         public bool enableAsteroidRotation = true;
-        [Range(0f, 4f)] public float rotationSpeedMultiplier = 1f;
+        [Range(0f, 4f)] public float rotationSpeedMultiplier = 1f; // existing master multiplier
+        [Header("V2.2.1 - non-repeating rocky surface")]
+        [Tooltip("Imported 1K albedo; applied only ONCE around each rock. Use Field Studio > Install Rock Surface.")]
+        public Texture2D rockAlbedoTexture;
+        [Tooltip("Imported GL normal map; subtle microdetail, not macro-craters.")]
+        public Texture2D rockNormalTexture;
+        [Range(0f, .5f)] public float rockNormalStrength = .18f;
+        [Header("V2.2.1 - motion")]
+        [Range(0f, 4f)] public float mineableRotationMultiplier = 1f;
+        [Range(0f, 4f)] public float decorativeRotationMultiplier = 1f;
         [Range(2, 5)] public int maximumStreamedSubdivisions = 4;
         public AsteroidFormationType formation = AsteroidFormationType.CrescentBelt;
         [Range(1, 2000)] public int asteroidCount = 120;
@@ -111,6 +120,9 @@ namespace MiningOperation.Asteroids
                 maxFarRenderDraws < 32 || maxFarRenderDraws > 1000 ||
                 !Finite(farBuildBudgetMs) || farBuildBudgetMs < 0.5f ||
                 !Finite(rotationSpeedMultiplier) || rotationSpeedMultiplier < 0f ||
+                !Finite(rockNormalStrength) || rockNormalStrength < 0f || rockNormalStrength > .5f ||
+                !Finite(mineableRotationMultiplier) || mineableRotationMultiplier < 0f || mineableRotationMultiplier > 4f ||
+                !Finite(decorativeRotationMultiplier) || decorativeRotationMultiplier < 0f || decorativeRotationMultiplier > 4f ||
                 maximumStreamedSubdivisions < 2 || maximumStreamedSubdivisions > 5 ||
                 cachedStreamedAsteroids < 0 || cachedStreamedAsteroids > 32 ||
                 !Finite(detailedDistanceMeters) || detailedDistanceMeters < 50f ||
@@ -148,6 +160,9 @@ namespace MiningOperation.Asteroids
             maxFarRenderDraws = Mathf.Clamp(maxFarRenderDraws, 32, 1000);
             farBuildBudgetMs = Mathf.Clamp(farBuildBudgetMs, 0.5f, 10f);
             rotationSpeedMultiplier = Mathf.Clamp(rotationSpeedMultiplier, 0f, 4f);
+            rockNormalStrength = Mathf.Clamp(rockNormalStrength, 0f, .5f);
+            mineableRotationMultiplier = Mathf.Clamp(mineableRotationMultiplier, 0f, 4f);
+            decorativeRotationMultiplier = Mathf.Clamp(decorativeRotationMultiplier, 0f, 4f);
             maximumStreamedSubdivisions = Mathf.Clamp(maximumStreamedSubdivisions, 2, 5);
             cachedStreamedAsteroids = Mathf.Clamp(cachedStreamedAsteroids, 0, 32);
             instantiatePerFrame = Mathf.Clamp(instantiatePerFrame, 1, 10);

@@ -256,11 +256,24 @@ namespace MiningOperation.Asteroids.Editor
                     new GUIContent("Slow asteroid rotation"));
                 EditorGUILayout.PropertyField(serialized.FindProperty("rotationSpeedMultiplier"),
                     new GUIContent("Rotation speed multiplier"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("mineableRotationMultiplier"),
+                    new GUIContent("Mineable rotation multiplier"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("decorativeRotationMultiplier"),
+                    new GUIContent("Debris rotation multiplier"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("rockNormalStrength"),
+                    new GUIContent("Rock normal strength"));
                 if (serialized.ApplyModifiedProperties())
                 {
                     EditorUtility.SetDirty(settings);
                     Repaint();
                 }
+                if (GUILayout.Button("Install Non-Tiling Rock Surface v2.2.1"))
+                    AsteroidRockTextureGenerator.Install(settings);
+                EditorGUILayout.HelpBox(settings.rockAlbedoTexture == null || settings.rockNormalTexture == null
+                    ? "Rock maps not assigned. Click Install to use imported 1024px textures."
+                    : "Rock maps installed: one wrap per asteroid, seam-aware UVs, subtle normal detail.",
+                    settings.rockAlbedoTexture == null || settings.rockNormalTexture == null
+                    ? MessageType.Warning : MessageType.Info);
                 if (GUILayout.Button("Use Safe URP Rock Surface"))
                 {
                     Undo.RecordObject(settings, "Enable stable procedural asteroid material");

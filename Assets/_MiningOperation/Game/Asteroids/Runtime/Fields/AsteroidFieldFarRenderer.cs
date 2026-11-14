@@ -44,8 +44,9 @@ namespace MiningOperation.Asteroids
                 return;
             snapshot = field;
             material = AsteroidStableMaterials.Create(settings.distantMaterial,
-                settings.allowExperimentalRockShaders, new Color(0.69f, 0.68f, 0.64f),
-                "MO Exact Far Asteroids (runtime)");
+                settings.allowExperimentalRockShaders, new Color(.83f, .82f, .78f),
+                "MO Exact Far Asteroids (runtime)",
+                settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
             if (material == null) { snapshot = null; return; }
             visibilityGrid = new AsteroidVisibilityGrid(650f);
             for (int i = 0; i < snapshot.asteroids.Count; ++i)
@@ -140,7 +141,7 @@ namespace MiningOperation.Asteroids
                     !uniqueMeshes.TryGetValue(rec.index, out Mesh mesh) || mesh == null) continue;
                 Quaternion rotation = settings.enableAsteroidRotation
                     ? AsteroidSpin.Evaluate(rec.localRotation, rec.asteroid.seed,
-                        rec.asteroid.diameterMeters, simulationSeconds, settings.rotationSpeedMultiplier)
+                        rec.asteroid.diameterMeters, simulationSeconds, settings.rotationSpeedMultiplier * settings.mineableRotationMultiplier)
                     : rec.localRotation;
                 Matrix4x4 objectToWorld = parent * Matrix4x4.TRS(rec.localPosition,
                     rotation, Vector3.one);

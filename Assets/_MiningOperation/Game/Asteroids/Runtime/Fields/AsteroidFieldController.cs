@@ -34,8 +34,9 @@ namespace MiningOperation.Asteroids
             if (settings == null) return null;
             if (runtimeNearMaterial == null)
                 runtimeNearMaterial = AsteroidStableMaterials.Create(settings.asteroidMaterial,
-                    settings.allowExperimentalRockShaders, new Color(0.65f, 0.64f, 0.61f, 1f),
-                    "MO Near Stable URP (runtime)");
+                    settings.allowExperimentalRockShaders, new Color(.87f, .85f, .81f, 1f),
+                    "MO Near Stable URP (runtime)",
+                    settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
             return runtimeNearMaterial;
         }
 
@@ -98,7 +99,7 @@ namespace MiningOperation.Asteroids
                     if (instance == null || record == null || record.asteroid == null) continue;
                     instance.transform.localRotation = AsteroidSpin.Evaluate(record.localRotation,
                         record.asteroid.seed, record.asteroid.diameterMeters,
-                        snapshot.simulationSeconds, settings.rotationSpeedMultiplier);
+                        snapshot.simulationSeconds, settings.rotationSpeedMultiplier * settings.mineableRotationMultiplier);
                 }
             }
             farRenderer?.Render(snapshot.simulationSeconds);

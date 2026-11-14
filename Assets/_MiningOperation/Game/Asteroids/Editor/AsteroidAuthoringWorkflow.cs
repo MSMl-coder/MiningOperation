@@ -168,11 +168,11 @@ namespace MiningOperation.Asteroids.Editor
             field.debrisSpreadMeters = 280f;
             field.debrisDrawDistance = 9000f;
             field.distantDrawDistanceMeters = 23000f;
-            field.asteroidMaterial = CreateOptionalMaterial("AsteroidRock.mat", "Mining Operation/Asteroid Rock URP");
-            field.distantMaterial = CreateOptionalMaterial("AsteroidFar.mat", "Mining Operation/Asteroid Far URP");
-            if (field.asteroidMaterial != null) AsteroidRockTextureGenerator.UpgradeMaterial(field.asteroidMaterial);
+            field.asteroidMaterial = CreateOptionalMaterial("AsteroidRock.mat", "Universal Render Pipeline/Lit");
+            field.distantMaterial = CreateOptionalMaterial("AsteroidFar.mat", "Universal Render Pipeline/Lit");
             AssetDatabase.CreateAsset(field,
                 AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/AsteroidField.asset"));
+            AsteroidRockTextureGenerator.Install(field);
             AssetDatabase.SaveAssets();
             return field;
         }
