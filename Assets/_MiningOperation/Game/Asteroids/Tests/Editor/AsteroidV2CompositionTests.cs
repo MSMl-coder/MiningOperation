@@ -122,11 +122,11 @@ namespace MiningOperation.Asteroids.Tests
         }
 
         [Test]
-        public void V3RockShapesAreIndependentOfClass()
+        public void GeneratedRockShapesAreIndependentOfClass()
         {
             var a = AsteroidGeneration.Create(7117, generator, AsteroidClass.I);
             var b = AsteroidGeneration.Create(7117, generator, AsteroidClass.III);
-            Assert.AreEqual(3, a.generatorVersion);
+            Assert.AreEqual(AsteroidGeneration.GeneratorVersion, a.generatorVersion);
             Assert.AreEqual(a.volumeM3, b.volumeM3, 0d);
             Mesh mesh = AsteroidGeometryGenerator.Generate(a, generator, 2);
             try { Assert.Greater(AsteroidGeneration.CalculateVolume(mesh), 0d); }

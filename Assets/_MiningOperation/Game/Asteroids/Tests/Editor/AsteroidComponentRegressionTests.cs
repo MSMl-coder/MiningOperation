@@ -121,7 +121,12 @@ namespace MiningOperation.Asteroids.Tests
                 Assert.IsNotNull(spawned);
                 Assert.IsNotNull(spawned.GetComponent<MeshFilter>().sharedMesh);
                 Assert.IsNotNull(spawned.GetComponent<MeshRenderer>());
-                Assert.IsNotNull(spawned.GetComponent<LODGroup>());
+                if (fieldSettings.fastStreamedAsteroids)
+                {
+                    Assert.AreEqual(1, spawned.GetComponentsInChildren<MeshFilter>(true).Length);
+                    Assert.AreEqual(0, spawned.GetComponentsInChildren<AsteroidGeneratedLODMarker>(true).Length);
+                }
+                else Assert.IsNotNull(spawned.GetComponent<LODGroup>());
             }
             finally { Object.DestroyImmediate(root); }
         }

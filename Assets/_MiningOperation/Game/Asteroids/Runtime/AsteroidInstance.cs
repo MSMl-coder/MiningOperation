@@ -20,6 +20,73 @@ namespace MiningOperation.Asteroids
 
         private readonly List<Mesh> ownedMeshes = new List<Mesh>();
         private MeshFilter meshFilter;
+        [System.NonSerialized] private bool runtimeSingleMesh;
+        [System.NonSerialized] private int runtimeMeshLevel = 3;
+
+        public void RestoreStreamed(AsteroidSaveRecord record, int subdivisions)
+        {
+            runtimeSingleMesh = true;
+            runtimeMeshLevel = Mathf.Clamp(subdivisions, 0, 5);
+            Restore(record);
+        }
+
+        /// <summary>
+        /// Handoff from far rendering with the EXACT same source mesh. No silhouette swap,
+        /// no mesh allocation on spawn; ownership remains with AsteroidFieldFarRenderer.
+        /// </summary>
+        public void RestoreStreamedShared(AsteroidSaveRecord record, int subdivisions, Mesh borrowedMesh)
+        {
+            if (borrowedMesh == null) throw new ArgumentNullException(nameof(borrowedMesh));
+            AsteroidSaveUtility.ValidateRecord(record);
+            runtimeSingleMesh = true;
+            runtimeMeshLevel = Mathf.Clamp(subdivisions, 1, 5);
+            data = DataFromRecord(record);
+            seed = data.seed;
+            persistentId = data.asteroidId;
+            ReleaseMeshes();
+            ClearGeneratedLODChildren();
+            meshFilter = GetComponent<MeshFilter>();
+            if (meshFilter == null) meshFilter = gameObject.AddComponent<MeshFilter>();
+            MeshRenderer renderer = GetComponent<MeshRenderer>();
+            if (renderer == null) renderer = gameObject.AddComponent<MeshRenderer>();
+            meshFilter.sharedMesh = borrowedMesh;
+            if (surfaceMaterial != null) renderer.sharedMaterial = surfaceMaterial;
+            LODGroup group = GetComponent<LODGroup>();
+            if (group != null) group.enabled = false;
+            MeshCollider collider = GetComponent<MeshCollider>();
+            if (addMeshCollider)
+            {
+                if (collider == null) collider = gameObject.AddComponent<MeshCollider>();
+                collider.sharedMesh = borrowedMesh;
+                collider.enabled = true;
+            }
+            else if (collider != null) collider.sharedMesh = null;
+        }
+
+        public int StreamedSubdivisionLevel => runtimeSingleMesh ? runtimeMeshLevel : -1;
+        public bool UpgradeStreamedGeometry(int nextSubdivisions)
+        {
+            if (!runtimeSingleMesh || data == null || settings == null) return false;
+            int wanted = Mathf.Clamp(nextSubdivisions, 0, 5);
+            if (wanted <= runtimeMeshLevel) return false;
+            int previous = runtimeMeshLevel;
+            runtimeMeshLevel = wanted;
+            try { RebuildGeometry(); return true; }
+            catch (Exception ex)
+            {
+                runtimeMeshLevel = previous;
+                Debug.LogWarning("[MO] Asteroid upgrade failed: " + ex.Message, this);
+                return false;
+            }
+        }
+
+        /// <summary>Synchronize an inactive cached instance after remote mining without rebuilding geometry.</summary>
+        public void SynchronizeMass(AsteroidSaveRecord record)
+        {
+            if (record != null && data != null && data.asteroidId == record.asteroidId)
+                data.remainingMassKg = record.remainingMassKg;
+        }
+
 
         public AsteroidData Data => data;
         public AsteroidGeneratorSettings Settings { get => settings; set => settings = value; }
@@ -99,6 +166,33 @@ namespace MiningOperation.Asteroids
         {
             if (data == null) return;
             if (settings == null) throw new InvalidOperationException("Generator Settings are required for LOD configuration.");
+            if (runtimeSingleMesh)
+            {
+                // Loading five costly procedural meshes per near rock caused main-thread stalls.
+                // Selection works by saved sphere bounds, so no collider is required by default.
+                Mesh compact = AsteroidGeometryGenerator.Generate(data, settings, runtimeMeshLevel);
+                compact.hideFlags = HideFlags.DontSave;
+                ReleaseMeshes();
+                ClearGeneratedLODChildren();
+                meshFilter = GetComponent<MeshFilter>();
+                if (meshFilter == null) meshFilter = gameObject.AddComponent<MeshFilter>();
+                MeshRenderer compactRenderer = GetComponent<MeshRenderer>();
+                if (compactRenderer == null) compactRenderer = gameObject.AddComponent<MeshRenderer>();
+                meshFilter.sharedMesh = compact;
+                ownedMeshes.Add(compact);
+                if (surfaceMaterial != null) compactRenderer.sharedMaterial = surfaceMaterial;
+                LODGroup group = GetComponent<LODGroup>();
+                if (group != null) group.enabled = false;
+                MeshCollider compactCollider = GetComponent<MeshCollider>();
+                if (addMeshCollider)
+                {
+                    if (compactCollider == null) compactCollider = gameObject.AddComponent<MeshCollider>();
+                    compactCollider.sharedMesh = compact;
+                    compactCollider.enabled = true;
+                }
+                else if (compactCollider != null) compactCollider.sharedMesh = null;
+                return;
+            }
             int high = Mathf.Clamp(settings.lod0Subdivisions, 0, 6);
             int mid = Mathf.Clamp(settings.lod1Subdivisions, 0, high);
             int low = Mathf.Clamp(settings.lod2Subdivisions, 0, mid);
@@ -210,7 +304,12 @@ namespace MiningOperation.Asteroids
         public void Restore(AsteroidSaveRecord record)
         {
             AsteroidSaveUtility.ValidateRecord(record);
-            Apply(new AsteroidData
+            Apply(DataFromRecord(record));
+        }
+
+        private static AsteroidData DataFromRecord(AsteroidSaveRecord record)
+        {
+            return new AsteroidData
             {
                 asteroidId = record.asteroidId,
                 seed = record.seed,
@@ -224,7 +323,7 @@ namespace MiningOperation.Asteroids
                 porosity01 = record.porosity01,
                 geometryProfile = record.geometryProfile != null ? record.geometryProfile.Copy() : null,
                 composition = CopyComposition(record.composition)
-            });
+            };
         }
 
         private static AsteroidData CopyData(AsteroidData src)

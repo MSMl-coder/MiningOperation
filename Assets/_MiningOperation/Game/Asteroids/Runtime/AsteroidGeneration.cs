@@ -5,7 +5,7 @@ namespace MiningOperation.Asteroids
 {
     public static class AsteroidGeneration
     {
-        public const int GeneratorVersion = 3;
+        public const int GeneratorVersion = 4;
 
         public static AsteroidData Create(int seed, AsteroidGeneratorSettings settings,
             AsteroidClass? forcedClass = null, string explicitId = null, float? diameterOverride = null)

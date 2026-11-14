@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime:MiningOperation.Asteroids:AsteroidGeneratorSettings
   catalog: {fileID: 11400000, guid: 8ae3f803353c1483c956f5abb5b2b089, type: 2}
   minimumDiameterMeters: 12
-  maximumDiameterMeters: 240
+  maximumDiameterMeters: 943.5
   shapeIrregularity: 0.55
   craterIntensity: 0.55
   surfaceRoughness: 0.45
   minCraters: 2
-  maxCraters: 18
+  maxCraters: 30
   minimumResources: 2
   maximumResources: 5
   classIIProbability: 0.25

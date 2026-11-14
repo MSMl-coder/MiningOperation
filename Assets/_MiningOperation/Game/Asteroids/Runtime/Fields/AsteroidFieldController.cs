@@ -22,6 +22,23 @@ namespace MiningOperation.Asteroids
         [SerializeField] private AsteroidFieldSnapshot snapshot;
 
         private readonly Dictionary<int, AsteroidInstance> active = new Dictionary<int, AsteroidInstance>();
+        private readonly Dictionary<int, AsteroidInstance> inactiveCache = new Dictionary<int, AsteroidInstance>();
+        private readonly LinkedList<int> cacheOrder = new LinkedList<int>();
+        private readonly Dictionary<int, LinkedListNode<int>> cacheNodes =
+            new Dictionary<int, LinkedListNode<int>>();
+        private Material runtimeNearMaterial;
+        public int CachedAsteroidCount => inactiveCache.Count;
+        public Material RuntimeAsteroidMaterial => GetRuntimeNearMaterial();
+        private Material GetRuntimeNearMaterial()
+        {
+            if (settings == null) return null;
+            if (runtimeNearMaterial == null)
+                runtimeNearMaterial = AsteroidStableMaterials.Create(settings.asteroidMaterial,
+                    settings.allowExperimentalRockShaders, new Color(0.65f, 0.64f, 0.61f, 1f),
+                    "MO Near Stable URP (runtime)");
+            return runtimeNearMaterial;
+        }
+
         private List<AsteroidFieldPlacement> pending;
         private AsteroidFieldSnapshot building;
         private int cursor;
@@ -71,11 +88,21 @@ namespace MiningOperation.Asteroids
 
         private void LateUpdate()
         {
-            if (Application.isPlaying && runtimeStreaming && !IsBuilding)
+            if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null) return;
+            if (settings != null && settings.enableAsteroidRotation)
             {
-                farRenderer?.Render();
-                debrisRenderer?.Render();
+                foreach (var pair in active)
+                {
+                    var instance = pair.Value;
+                    var record = FindRecord(pair.Key);
+                    if (instance == null || record == null || record.asteroid == null) continue;
+                    instance.transform.localRotation = AsteroidSpin.Evaluate(record.localRotation,
+                        record.asteroid.seed, record.asteroid.diameterMeters,
+                        snapshot.simulationSeconds, settings.rotationSpeedMultiplier);
+                }
             }
+            farRenderer?.Render(snapshot.simulationSeconds);
+            debrisRenderer?.Render();
         }
 
         private void OnDisable()
@@ -84,6 +111,12 @@ namespace MiningOperation.Asteroids
             farRenderer = null;
             debrisRenderer?.Dispose();
             debrisRenderer = null;
+        }
+
+        private void OnDestroy()
+        {
+            if (runtimeNearMaterial != null) AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
+            runtimeNearMaterial = null;
         }
 
         private void InitializeFarRendering()
@@ -129,6 +162,8 @@ namespace MiningOperation.Asteroids
         private void Update()
         {
             if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null || settings == null) return;
+            if (settings.enableAsteroidRotation)
+                snapshot.simulationSeconds += Math.Max(0d, (double)Time.deltaTime);
             // Avoid expensive scans on every render frame in dense fields.
             if (Time.time < nextStreamingTick) return;
             nextStreamingTick = Time.time + Mathf.Max(0.1f, settings.streamingTickSeconds);
@@ -271,6 +306,7 @@ namespace MiningOperation.Asteroids
                 return;
             }
             int remaining = Math.Min(spawnBudget, Math.Max(0, maxDetailed - active.Count));
+            int initialBudget = remaining;
             for (int i = 0; i < permittedCount && remaining > 0; i++)
             {
                 AsteroidFieldRecord record = candidates[i].Key;
@@ -278,7 +314,36 @@ namespace MiningOperation.Asteroids
                 Spawn(record);
                 remaining--;
             }
+            // Upgrade at most one currently near asteroid per streaming tick.
+            // The first visible mesh is borrowed from far rendering (identical silhouette).
+            if (optimized && settings.fastStreamedAsteroids && settings.exactFarShape &&
+                remaining == initialBudget)
+                UpgradeClosestVisible(candidates, permittedCount);
             UpdateDistantInstances(worldPosition);
+        }
+
+        private void UpgradeClosestVisible(
+            List<KeyValuePair<AsteroidFieldRecord, float>> candidates, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                var record = candidates[i].Key;
+                if (record == null || record.asteroid == null ||
+                    !active.TryGetValue(record.index, out AsteroidInstance instance) || instance == null)
+                    continue;
+                float distance = Mathf.Sqrt(candidates[i].Value);
+                float ratio = distance / Mathf.Max(1f, record.asteroid.diameterMeters);
+                int target = settings.exactFarSubdivisions;
+                if (ratio < 14f) target = Mathf.Max(target, 3);
+                if (ratio < 3.5f) target = Mathf.Max(target, 4);
+                if (ratio < 1.2f) target = Mathf.Max(target, 5);
+                target = Mathf.Min(target, settings.maximumStreamedSubdivisions);
+                if (instance.StreamedSubdivisionLevel >= 0 && instance.StreamedSubdivisionLevel < target)
+                {
+                    instance.UpgradeStreamedGeometry(instance.StreamedSubdivisionLevel + 1);
+                    break;
+                }
+            }
         }
 
         private void UpdateDistantInstances(Vector3 viewerWorldPosition)
@@ -289,12 +354,39 @@ namespace MiningOperation.Asteroids
             Camera gameCamera = viewer != null ? viewer.GetComponent<Camera>() : null;
             if (gameCamera == null) gameCamera = Camera.main;
             farRenderer?.Refresh(snapshot, viewerWorldPosition, detailedIdsScratch, gameCamera);
-            debrisRenderer?.Refresh(viewerWorldPosition, gameCamera);
+            debrisRenderer?.Refresh(viewerWorldPosition, gameCamera, snapshot.simulationSeconds);
         }
 
         private AsteroidInstance Spawn(AsteroidFieldRecord record)
         {
             if (settings == null || settings.asteroidSettings == null) return null;
+            if (inactiveCache.TryGetValue(record.index, out var cached) && cached != null &&
+                cached.Data != null && cached.Data.asteroidId == record.asteroid.asteroidId)
+            {
+                inactiveCache.Remove(record.index);
+                if (cacheNodes.TryGetValue(record.index, out var node))
+                {
+                    cacheOrder.Remove(node);
+                    cacheNodes.Remove(record.index);
+                }
+                cached.transform.localPosition = record.localPosition;
+                cached.transform.localRotation = record.localRotation;
+                cached.SynchronizeMass(record.asteroid);
+                cached.gameObject.SetActive(true);
+                active[record.index] = cached;
+                return cached;
+            }
+            if (inactiveCache.ContainsKey(record.index))
+            {
+                if (inactiveCache[record.index] != null)
+                    AsteroidGeneration.DestroyTemporary(inactiveCache[record.index].gameObject);
+                inactiveCache.Remove(record.index);
+                if (cacheNodes.TryGetValue(record.index, out var node))
+                {
+                    cacheOrder.Remove(node);
+                    cacheNodes.Remove(record.index);
+                }
+            }
             var go = new GameObject(record.asteroid.asteroidId);
             go.transform.SetParent(transform, false);
             go.transform.localPosition = record.localPosition;
@@ -305,11 +397,22 @@ namespace MiningOperation.Asteroids
             member.fieldId = snapshot.fieldId;
             var asteroid = go.AddComponent<AsteroidInstance>();
             asteroid.Settings = settings.asteroidSettings;
-            asteroid.SurfaceMaterial = settings.asteroidMaterial;
+            asteroid.SurfaceMaterial = GetRuntimeNearMaterial() != null ? GetRuntimeNearMaterial() : settings.asteroidMaterial;
             asteroid.AddMeshCollider = settings.meshColliders;
             try
             {
-                asteroid.Restore(record.asteroid);
+                if (settings.fastStreamedAsteroids && settings.exactFarShape && farRenderer != null &&
+                    farRenderer.Ready)
+                {
+                    Mesh shared = farRenderer.GetOrCreateMesh(record);
+                    if (shared != null)
+                        asteroid.RestoreStreamedShared(record.asteroid, settings.exactFarSubdivisions, shared);
+                    else asteroid.RestoreStreamed(record.asteroid, settings.streamedMeshSubdivisions);
+                }
+                else if (settings.fastStreamedAsteroids)
+                    asteroid.RestoreStreamed(record.asteroid, settings.streamedMeshSubdivisions);
+                else
+                    asteroid.Restore(record.asteroid);
                 active[record.index] = asteroid;
                 return asteroid;
             }
@@ -383,7 +486,25 @@ namespace MiningOperation.Asteroids
             {
                 if (record != null && asteroid.Data != null) record.asteroid = asteroid.Capture();
                 asteroid.gameObject.SetActive(false);
-                AsteroidGeneration.DestroyTemporary(asteroid.gameObject);
+                int cacheLimit = Application.isPlaying && settings != null && settings.fastStreamedAsteroids
+                    ? settings.cachedStreamedAsteroids : 0;
+                if (cacheLimit > 0)
+                {
+                    inactiveCache[index] = asteroid;
+                    if (cacheNodes.TryGetValue(index, out var existingNode))
+                        cacheOrder.Remove(existingNode);
+                    cacheNodes[index] = cacheOrder.AddLast(index);
+                    while (inactiveCache.Count > cacheLimit && cacheOrder.First != null)
+                    {
+                        int oldest = cacheOrder.First.Value;
+                        cacheOrder.RemoveFirst();
+                        cacheNodes.Remove(oldest);
+                        if (!inactiveCache.TryGetValue(oldest, out var old)) continue;
+                        inactiveCache.Remove(oldest);
+                        if (old != null) AsteroidGeneration.DestroyTemporary(old.gameObject);
+                    }
+                }
+                else AsteroidGeneration.DestroyTemporary(asteroid.gameObject);
             }
             active.Remove(index);
         }
@@ -391,8 +512,21 @@ namespace MiningOperation.Asteroids
         public void ClearSpawned()
         {
             ReindexChildren();
-            var indices = new List<int>(active.Keys);
-            foreach (int index in indices) Despawn(index);
+            // A rebuild/load/scene reset must not recycle meshes from a previous field snapshot.
+            foreach (var pair in active)
+            {
+                if (pair.Value == null) continue;
+                var record = FindRecord(pair.Key);
+                if (record != null && pair.Value.Data != null) record.asteroid = pair.Value.Capture();
+                pair.Value.gameObject.SetActive(false);
+                AsteroidGeneration.DestroyTemporary(pair.Value.gameObject);
+            }
+            active.Clear();
+            foreach (var pair in inactiveCache)
+                if (pair.Value != null) AsteroidGeneration.DestroyTemporary(pair.Value.gameObject);
+            inactiveCache.Clear();
+            cacheOrder.Clear();
+            cacheNodes.Clear();
         }
 
         private void ReindexChildren()

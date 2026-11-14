@@ -19,6 +19,7 @@ namespace MiningOperation.Asteroids
             public Quaternion rotation;
             public float diameter;
             public byte variant;
+            public int spinSeed;
         }
         private readonly Transform root;
         private readonly AsteroidFieldSettings settings;
@@ -42,9 +43,9 @@ namespace MiningOperation.Asteroids
             Dispose();
             if (snapshot?.asteroids == null || snapshot.asteroids.Count == 0 ||
                 settings == null || !settings.enableDecorativeDebris || !SystemInfo.supportsInstancing) return;
-            Shader shader = Shader.Find("Mining Operation/Asteroid Far URP");
-            if (settings.distantMaterial != null) material = new Material(settings.distantMaterial);
-            else if (shader != null) material = new Material(shader);
+            material = AsteroidStableMaterials.Create(settings.distantMaterial,
+                settings.allowExperimentalRockShaders, new Color(0.58f, 0.62f, 0.65f, 1f),
+                "MO Debris Stable URP (runtime)");
             if (material == null) return;
             material.enableInstancing = true;
             material.hideFlags = HideFlags.DontSave;
@@ -93,7 +94,8 @@ namespace MiningOperation.Asteroids
                     localPosition = center,
                     rotation = Quaternion.Euler(rng.Range(0f,360f), rng.Range(0f,360f), rng.Range(0f,360f)),
                     diameter = diameter,
-                    variant = (byte)rng.Range(0, meshes.Count)
+                    variant = (byte)rng.Range(0, meshes.Count),
+                    spinSeed = AsteroidIdUtility.DeriveSeed(snapshot.fieldSeed ^ 0x35C6A87DL, i)
                 });
             }
             visibilityGrid = new AsteroidVisibilityGrid(500f);
@@ -105,7 +107,8 @@ namespace MiningOperation.Asteroids
             for (int i = 0; i < batches.Length; i++) batches[i] = new Matrix4x4[perVariant];
         }
 
-        public void Refresh(Vector3 viewerWorldPosition, Camera camera = null)
+        public void Refresh(Vector3 viewerWorldPosition, Camera camera = null,
+            double simulationSeconds = 0d)
         {
             VisibleCount = 0;
             if (material == null || batches == null) return;
@@ -123,8 +126,12 @@ namespace MiningOperation.Asteroids
                 int count = counts[variant];
                 if (count == batches[variant].Length)
                     Array.Resize(ref batches[variant], Mathf.Min(fragments.Count, count * 2));
+                Quaternion rotation = settings.enableAsteroidRotation ?
+                    AsteroidSpin.Evaluate(fragment.rotation, fragment.spinSeed,
+                        fragment.diameter, simulationSeconds, settings.rotationSpeedMultiplier * 0.45f) :
+                    fragment.rotation;
                 batches[variant][count] = parent * Matrix4x4.TRS(fragment.localPosition,
-                    fragment.rotation, Vector3.one * fragment.diameter);
+                    rotation, Vector3.one * fragment.diameter);
                 counts[variant]++;
                 VisibleCount++;
             }

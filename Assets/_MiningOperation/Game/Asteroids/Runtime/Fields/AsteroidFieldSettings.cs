@@ -21,6 +21,23 @@ namespace MiningOperation.Asteroids
         public Material asteroidMaterial;
         [Tooltip("Optional lightweight material for GPU-instanced distant rocks.")]
         public Material distantMaterial;
+        [Header("V2.1.1 - safe materials and streaming")]
+        [Tooltip("OFF = use stable URP/Lit for near, far and debris. Enable only after validating custom shaders in Game view.")]
+        public bool allowExperimentalRockShaders = false;
+        [Tooltip("Create one render mesh per nearby asteroid, instead of five LOD meshes in the same frame.")]
+        public bool fastStreamedAsteroids = true;
+        [Range(0, 4)] public int streamedMeshSubdivisions = 3;
+        [Range(0, 32)] public int cachedStreamedAsteroids = 12;
+        [Header("V2.2 - continuous shapes / deterministic spin")]
+        [Tooltip("Far asteroids use their own persisted seed and shape, not another rock's preset.")]
+        public bool exactFarShape = true;
+        [Range(1, 3)] public int exactFarSubdivisions = 2;
+        [Range(1, 16)] public int exactFarBuildsPerFrame = 2;
+        [Range(32, 1000)] public int maxFarRenderDraws = 300;
+        [Range(0.5f, 10f)] public float farBuildBudgetMs = 2f;
+        public bool enableAsteroidRotation = true;
+        [Range(0f, 4f)] public float rotationSpeedMultiplier = 1f;
+        [Range(2, 5)] public int maximumStreamedSubdivisions = 4;
         public AsteroidFormationType formation = AsteroidFormationType.CrescentBelt;
         [Range(1, 2000)] public int asteroidCount = 120;
         [Range(0f, 1f)] public float smallAsteroidBias = 0.68f;
@@ -88,6 +105,14 @@ namespace MiningOperation.Asteroids
                 !Finite(spawnDistanceMeters) || spawnDistanceMeters <= 0f ||
                 !Finite(despawnDistanceMeters) || despawnDistanceMeters <= spawnDistanceMeters ||
                 generatePerFrame < 1 || instantiatePerFrame < 1 || maxActiveAsteroids < 1 ||
+                streamedMeshSubdivisions < 0 || streamedMeshSubdivisions > 4 ||
+                exactFarSubdivisions < 1 || exactFarSubdivisions > 3 ||
+                exactFarBuildsPerFrame < 1 || exactFarBuildsPerFrame > 16 ||
+                maxFarRenderDraws < 32 || maxFarRenderDraws > 1000 ||
+                !Finite(farBuildBudgetMs) || farBuildBudgetMs < 0.5f ||
+                !Finite(rotationSpeedMultiplier) || rotationSpeedMultiplier < 0f ||
+                maximumStreamedSubdivisions < 2 || maximumStreamedSubdivisions > 5 ||
+                cachedStreamedAsteroids < 0 || cachedStreamedAsteroids > 32 ||
                 !Finite(detailedDistanceMeters) || detailedDistanceMeters < 50f ||
                 !Finite(distantDrawDistanceMeters) || distantDrawDistanceMeters < detailedDistanceMeters ||
                 maxDetailedAsteroids < 1 || distantMeshVariants < 1 ||
@@ -117,6 +142,14 @@ namespace MiningOperation.Asteroids
             spawnDistanceMeters = Mathf.Max(100f, spawnDistanceMeters);
             despawnDistanceMeters = Mathf.Max(spawnDistanceMeters + 100f, despawnDistanceMeters);
             generatePerFrame = Mathf.Clamp(generatePerFrame, 1, 10);
+            streamedMeshSubdivisions = Mathf.Clamp(streamedMeshSubdivisions, 0, 4);
+            exactFarSubdivisions = Mathf.Clamp(exactFarSubdivisions, 1, 3);
+            exactFarBuildsPerFrame = Mathf.Clamp(exactFarBuildsPerFrame, 1, 16);
+            maxFarRenderDraws = Mathf.Clamp(maxFarRenderDraws, 32, 1000);
+            farBuildBudgetMs = Mathf.Clamp(farBuildBudgetMs, 0.5f, 10f);
+            rotationSpeedMultiplier = Mathf.Clamp(rotationSpeedMultiplier, 0f, 4f);
+            maximumStreamedSubdivisions = Mathf.Clamp(maximumStreamedSubdivisions, 2, 5);
+            cachedStreamedAsteroids = Mathf.Clamp(cachedStreamedAsteroids, 0, 32);
             instantiatePerFrame = Mathf.Clamp(instantiatePerFrame, 1, 10);
             maxActiveAsteroids = Mathf.Clamp(maxActiveAsteroids, 1, 300);
             detailedDistanceMeters = Mathf.Max(50f, detailedDistanceMeters);

@@ -143,6 +143,8 @@ namespace MiningOperation.Asteroids.Editor
             EditorGUILayout.Space(7);
             DrawPerformanceAndScene();
             EditorGUILayout.Space(7);
+            DrawV22Controls();
+            EditorGUILayout.Space(7);
             DrawAnchorPicker();
             EditorGUILayout.Space(6);
             DrawSettings();
@@ -205,6 +207,11 @@ namespace MiningOperation.Asteroids.Editor
                     if (GUILayout.Button("Frame Real Asteroid"))
                         AsteroidV2SceneSetup.FrameBelt();
                 }
+                using (new EditorGUI.DisabledScope(anchor == null || anchor.settings == null))
+                {
+                    if (GUILayout.Button("Fix Pink Rocks / Smooth Streaming (v2.1.1)", GUILayout.Height(28)))
+                        AsteroidV2SceneSetup.ApplyStableRuntimePreset(anchor);
+                }
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (GUILayout.Button("Rock Material Setup"))
@@ -216,6 +223,52 @@ namespace MiningOperation.Asteroids.Editor
             EditorGUILayout.HelpBox("Balanced: 1,600 decorative rocks, no micro-fragment layer, " +
                 "frustum/cell culling. These are visual-only settings; regenerate only when editing " +
                 "the actual mineable formation.", MessageType.None);
+        }
+
+        // Visual/runtime settings only: editing these does NOT rebuild or reset mineable records.
+        private void DrawV22Controls()
+        {
+            if (!Ready) return;
+            EditorGUILayout.LabelField("V2.2  /  SHAPE CONTINUITY + ROCK + MOTION", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("The same asteroid seed/shape is used from far to near. " +
+                "The first near mesh is borrowed from far rendering; closer detail is upgraded gradually. " +
+                "Settings below do not change resource records or field layout.", MessageType.Info);
+            if (settings.allowExperimentalRockShaders)
+                EditorGUILayout.HelpBox("Experimental shaders are enabled. Turn them OFF to use safe URP/Lit " +
+                    "with the generated rock texture and normal detail.", MessageType.Warning);
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                var serialized = new SerializedObject(settings);
+                serialized.Update();
+                EditorGUILayout.PropertyField(serialized.FindProperty("exactFarShape"),
+                    new GUIContent("Same shape from far to near"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("exactFarSubdivisions"),
+                    new GUIContent("Far mesh subdivisions"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("maximumStreamedSubdivisions"),
+                    new GUIContent("Maximum near subdivisions"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("exactFarBuildsPerFrame"),
+                    new GUIContent("Far meshes per frame"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("farBuildBudgetMs"),
+                    new GUIContent("Far build time budget (ms)"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("maxFarRenderDraws"),
+                    new GUIContent("Max far asteroid draw calls"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("enableAsteroidRotation"),
+                    new GUIContent("Slow asteroid rotation"));
+                EditorGUILayout.PropertyField(serialized.FindProperty("rotationSpeedMultiplier"),
+                    new GUIContent("Rotation speed multiplier"));
+                if (serialized.ApplyModifiedProperties())
+                {
+                    EditorUtility.SetDirty(settings);
+                    Repaint();
+                }
+                if (GUILayout.Button("Use Safe URP Rock Surface"))
+                {
+                    Undo.RecordObject(settings, "Enable stable procedural asteroid material");
+                    settings.allowExperimentalRockShaders = false;
+                    settings.exactFarShape = true;
+                    EditorUtility.SetDirty(settings);
+                }
+            }
         }
 
         private void DrawAnchorPicker()

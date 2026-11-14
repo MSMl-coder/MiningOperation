@@ -81,7 +81,7 @@ namespace MiningOperation.Asteroids
         {
             if (record == null || string.IsNullOrWhiteSpace(record.asteroidId) || record.asteroidId.Length > 256)
                 throw new InvalidOperationException("Asteroid save is missing a valid ID.");
-            if (record.generatorVersion != 1 && record.generatorVersion != 2 && record.generatorVersion != 3)
+            if (record.generatorVersion != 1 && record.generatorVersion != 2 && record.generatorVersion != 3 && record.generatorVersion != 4)
                 throw new InvalidOperationException("Unsupported geometry version for " + record.asteroidId);
             if (record.asteroidClass < 1 || record.asteroidClass > 3 ||
                 !Finite(record.diameterMeters) || record.diameterMeters <= 0d ||

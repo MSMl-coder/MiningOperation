@@ -21,6 +21,8 @@ namespace MiningOperation.Asteroids
         public string fieldId;
         public long fieldSeed;
         public AsteroidFormationType formation;
+        // Added in v2.2. Old saves deserialize as 0; does not alter geometry or ore.
+        public double simulationSeconds;
         public List<AsteroidFieldRecord> asteroids = new List<AsteroidFieldRecord>();
     }
 
@@ -79,7 +81,9 @@ namespace MiningOperation.Asteroids
                 (snapshot.layoutVersion != 1 && snapshot.layoutVersion != 2 && snapshot.layoutVersion != 3) ||
                 string.IsNullOrWhiteSpace(snapshot.fieldId) || snapshot.fieldId.Length > 80 ||
                 snapshot.asteroids == null || snapshot.asteroids.Count > 2000 ||
-                !Enum.IsDefined(typeof(AsteroidFormationType), snapshot.formation))
+                !Enum.IsDefined(typeof(AsteroidFormationType), snapshot.formation) ||
+                double.IsNaN(snapshot.simulationSeconds) || double.IsInfinity(snapshot.simulationSeconds) ||
+                snapshot.simulationSeconds < 0d)
                 throw new InvalidOperationException("Invalid or unsupported field snapshot.");
             var ids = new HashSet<string>(StringComparer.Ordinal);
             var indices = new HashSet<int>();

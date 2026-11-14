@@ -29,6 +29,6 @@ MonoBehaviour:
   hazeEndMeters: 16500
   hazeStrength: 0.5
   planetMaterial: {fileID: 2100000, guid: c95511c83821a4cb1875e10230b14b19, type: 2}
-  showPlanet: 1
+  showPlanet: 0
   planetPosition: {x: -32000, y: 3000, z: 46000}
   planetDiameter: 24000

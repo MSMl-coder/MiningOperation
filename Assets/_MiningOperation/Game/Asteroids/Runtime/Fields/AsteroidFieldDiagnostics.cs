@@ -20,7 +20,7 @@ namespace MiningOperation.Asteroids
             nextUpdate = Time.unscaledTime + 0.25f;
             var controllers = FindObjectsByType<AsteroidFieldController>(FindObjectsSortMode.None);
             if (controllers.Length == 0) { report = "No AsteroidFieldController"; return; }
-            int total = 0, n1 = 0, n2 = 0, n3 = 0, detailed = 0, far = 0, decor = 0, ready = 0, building = 0;
+            int total = 0, n1 = 0, n2 = 0, n3 = 0, detailed = 0, cached = 0, far = 0, decor = 0, ready = 0, building = 0;
             float nearest = float.MaxValue, nearLimit = 0f;
             foreach (var item in controllers)
             {
@@ -29,6 +29,7 @@ namespace MiningOperation.Asteroids
                 if (item.NearestDistanceMeters >= 0f && item.NearestDistanceMeters < nearest)
                 { nearest = item.NearestDistanceMeters; nearLimit = item.DetailedRangeMeters; }
                 detailed += item.ActiveCount;
+                cached += item.CachedAsteroidCount;
                 far += item.FarRenderedCount;
                 decor += item.DecorativeRenderedCount;
                 if (item.FarGpuReady) ready++;
@@ -46,10 +47,13 @@ namespace MiningOperation.Asteroids
                     }
                 }
             }
+            bool exact = false;
+            foreach (var item in controllers)
+                if (item != null && item.Settings != null && item.Settings.exactFarShape) exact = true;
             report = $"Fields: {controllers.Length} | Building: {building}\n" +
                 $"Total asteroids: {total} | Classes: {n1}/{n2}/{n3}\n" +
-                $"Detailed GameObjects: {detailed}\n" +
-                $"Far GPU instances: {far} ({ready} renderers ON)\n" +
+                $"Detailed GameObjects: {detailed} | Cached: {cached}\n" +
+                $"Far {(exact ? "unique meshes / draws" : "instances")}: {far} ({ready} renderers ON)\n" +
                 $"Decorative fragments: {decor} (not mineable)\n" +
                 $"Nearest: {(nearest < float.MaxValue ? nearest.ToString("F0") + " m" : "not checked")} / detailed range: {nearLimit:F0} m\n" +
                 $"FPS: {(Time.unscaledDeltaTime > 0f ? 1f / Time.unscaledDeltaTime : 0f):F0}";

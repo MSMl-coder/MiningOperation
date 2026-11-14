@@ -134,6 +134,28 @@ namespace MiningOperation.Asteroids.Editor
             return Undo.AddComponent<Light>(go);
         }
 
+        public static void ApplyStableRuntimePreset(AsteroidFieldSpawnPoint anchor)
+        {
+            if (anchor == null || anchor.settings == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (!EditorUtility.DisplayDialog("Stable Asteroid Rendering v2.1.1",
+                "Apply to this SHARED Field Settings asset? Forces standard URP/Lit near/far/debris materials, " +
+                "creates ONE near mesh per asteroid and caches 12 recently visited rocks. " +
+                "This does NOT regenerate the belt or change resource data. Experimental triplanar graphics are " +
+                "temporarily disabled until validated.", "Apply stable preset", "Cancel")) return;
+            var s = anchor.settings;
+            Undo.RecordObject(s, "MO stable streaming and rock materials");
+            s.allowExperimentalRockShaders = false;
+            s.fastStreamedAsteroids = true;
+            s.streamedMeshSubdivisions = 3;
+            s.cachedStreamedAsteroids = 12;
+            s.instantiatePerFrame = 1;
+            s.meshColliders = false; // selection uses persistent asteroid bounds
+            s.useGpuFarField = true;
+            EditorUtility.SetDirty(s);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[MO] Stable materials + one-mesh near streaming enabled; no asteroid snapshots changed. Re-enter Play Mode.");
+        }
+
         public static void ApplyBalancedPreset(AsteroidFieldSpawnPoint anchor)
         {
             if (anchor == null || anchor.settings == null) return;

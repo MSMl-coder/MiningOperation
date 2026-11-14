@@ -13,19 +13,43 @@ MonoBehaviour:
   m_Name: AsteroidFieldSettings
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidFieldSettings
   asteroidSettings: {fileID: 11400000, guid: 4e06ed6d4eaca41d7bf8cb0a60516f8c, type: 2}
-  asteroidMaterial: {fileID: 2100000, guid: 6e15aba9568aa4522b50b5564f4a5556, type: 2}
-  distantMaterial: {fileID: 2100000, guid: bda6e4af69cad4ca38756ccde4d54ac2, type: 2}
+  asteroidMaterial: {fileID: 2100000, guid: 18dff8aba1d934c858ddc7f545ee9985, type: 2}
+  distantMaterial: {fileID: 2100000, guid: bdc7d6b7f8f94454ba3f131d5600ec21, type: 2}
+  allowExperimentalRockShaders: 0
+  fastStreamedAsteroids: 1
+  streamedMeshSubdivisions: 3
+  cachedStreamedAsteroids: 12
+  exactFarShape: 1
+  exactFarSubdivisions: 2
+  exactFarBuildsPerFrame: 2
+  maxFarRenderDraws: 300
+  farBuildBudgetMs: 2
+  enableAsteroidRotation: 1
+  rotationSpeedMultiplier: 4
+  maximumStreamedSubdivisions: 4
   formation: 0
   asteroidCount: 120
   smallAsteroidBias: 0.68
-  radiusMeters: 8500
+  radiusMeters: 14619
   thicknessMeters: 1800
-  arcDegrees: 180
+  arcDegrees: 141
   cloudVerticalScale: 0.65
   clusterCount: 4
   clusterRadiusFraction: 0.16
   minimumSurfaceGapMeters: 100
   placementAttempts: 75
+  useComposedLayout: 1
+  clusterStrength: 0.78
+  densityPockets: 10
+  pocketWidthFraction: 0.08
+  enableDecorativeDebris: 1
+  decorativeRockCount: 3600
+  microFragmentCount: 6500
+  debrisSpreadMeters: 280
+  fragmentMinDiameter: 0.6
+  fragmentMaxDiameter: 13
+  debrisDrawDistance: 11500
+  debrisMeshVariants: 12
   spawnDistanceMeters: 13000
   despawnDistanceMeters: 16000
   generatePerFrame: 4

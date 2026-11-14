@@ -207,7 +207,8 @@ namespace MiningOperation.Asteroids
                     field.Settings.asteroidSettings, 3);
                 previewMesh.hideFlags = HideFlags.DontSave;
                 previewModel.GetComponent<MeshFilter>().sharedMesh = previewMesh;
-                previewModel.GetComponent<MeshRenderer>().sharedMaterial = field.Settings.asteroidMaterial;
+                previewModel.GetComponent<MeshRenderer>().sharedMaterial =
+                    field.RuntimeAsteroidMaterial != null ? field.RuntimeAsteroidMaterial : field.Settings.asteroidMaterial;
                 previewModel.transform.localScale = Vector3.one / Mathf.Max(1f, rock.diameterMeters);
             }
             catch (Exception ex)

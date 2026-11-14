@@ -62,11 +62,14 @@ namespace MiningOperation.Asteroids
                 }
                 return legacyMesh;
             }
-            if ((data.generatorVersion != 2 && data.generatorVersion != 3) || data.geometryProfile == null)
+            if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4) || data.geometryProfile == null)
                 throw new InvalidOperationException("Unsupported asteroid geometry version or missing shape profile.");
             Mesh mesh = GenerateV2(data.seed, data.diameterMeters, data.geometryProfile, subdivisions, visualColors);
-            if (data.generatorVersion == 3)
+            if (data.generatorVersion >= 3)
                 AsteroidGeologyV3.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+            if (data.generatorVersion >= 4)
+                AsteroidGeologyV4.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+            if (visualColors) AsteroidSurfaceUV.Apply(mesh, data.seed);
             return mesh;
         }
 
