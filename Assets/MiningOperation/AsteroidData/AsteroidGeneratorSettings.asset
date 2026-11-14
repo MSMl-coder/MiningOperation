@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: AsteroidGeneratorSettings
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime:MiningOperation.Asteroids:AsteroidGeneratorSettings
-  catalog: {fileID: 11400000, guid: 10c6a4aab08db4b33a6b60aa03ca7954, type: 2}
+  catalog: {fileID: 11400000, guid: 8ae3f803353c1483c956f5abb5b2b089, type: 2}
   minimumDiameterMeters: 12
   maximumDiameterMeters: 240
   shapeIrregularity: 0.55
@@ -35,5 +35,7 @@ MonoBehaviour:
   maximumExoticFractionClassIII: 0.025
   lod0Subdivisions: 4
   lod1Subdivisions: 3
-  lod2Subdivisions: 2
+  lod2Subdivisions: 3
+  lod3Subdivisions: 2
+  lod4Subdivisions: 1
   volumeSubdivisions: 4

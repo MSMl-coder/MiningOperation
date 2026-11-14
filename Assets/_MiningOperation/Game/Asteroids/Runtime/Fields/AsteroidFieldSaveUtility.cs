@@ -76,7 +76,7 @@ namespace MiningOperation.Asteroids
         public static void Validate(AsteroidFieldSnapshot snapshot)
         {
             if (snapshot == null || snapshot.schemaVersion != SchemaVersion ||
-                snapshot.layoutVersion != AsteroidFieldLayout.LayoutVersion ||
+                (snapshot.layoutVersion != 1 && snapshot.layoutVersion != 2 && snapshot.layoutVersion != 3) ||
                 string.IsNullOrWhiteSpace(snapshot.fieldId) || snapshot.fieldId.Length > 80 ||
                 snapshot.asteroids == null || snapshot.asteroids.Count > 2000 ||
                 !Enum.IsDefined(typeof(AsteroidFormationType), snapshot.formation))

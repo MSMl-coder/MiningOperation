@@ -81,7 +81,7 @@ namespace MiningOperation.Asteroids
         {
             if (record == null || string.IsNullOrWhiteSpace(record.asteroidId) || record.asteroidId.Length > 256)
                 throw new InvalidOperationException("Asteroid save is missing a valid ID.");
-            if (record.generatorVersion != 1 && record.generatorVersion != AsteroidGeneration.GeneratorVersion)
+            if (record.generatorVersion != 1 && record.generatorVersion != 2 && record.generatorVersion != 3)
                 throw new InvalidOperationException("Unsupported geometry version for " + record.asteroidId);
             if (record.asteroidClass < 1 || record.asteroidClass > 3 ||
                 !Finite(record.diameterMeters) || record.diameterMeters <= 0d ||
@@ -91,10 +91,10 @@ namespace MiningOperation.Asteroids
                 !Finite(record.remainingMassKg) || record.remainingMassKg < 0d ||
                 record.remainingMassKg > record.initialMassKg)
                 throw new InvalidOperationException("Invalid physical values for " + record.asteroidId);
-            if (record.generatorVersion == 2 && (record.geometryProfile == null ||
+            if (record.generatorVersion >= 2 && (record.geometryProfile == null ||
                 !Finite(record.porosity01) || record.porosity01 < 0d || record.porosity01 >= 1d))
                 throw new InvalidOperationException("V2 asteroid lacks its shape snapshot or valid porosity: " + record.asteroidId);
-            if (record.generatorVersion == 2)
+            if (record.generatorVersion >= 2)
             {
                 AsteroidGeometryProfile p = record.geometryProfile;
                 if (!Finite(p.shapeIrregularity) || p.shapeIrregularity < 0 || p.shapeIrregularity > 1 ||

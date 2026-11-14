@@ -99,7 +99,9 @@ namespace MiningOperation.Asteroids
         [Range(0f, 0.25f)] public float maximumExoticFractionClassIII = 0.025f;
         [Range(0, 6)] public int lod0Subdivisions = 4;
         [Range(0, 6)] public int lod1Subdivisions = 3;
-        [Range(0, 6)] public int lod2Subdivisions = 2;
+        [Range(0, 6)] public int lod2Subdivisions = 3;
+        [Range(0, 6)] public int lod3Subdivisions = 2;
+        [Range(0, 6)] public int lod4Subdivisions = 1;
         // Fixed physics source: unaffected by render LOD configuration.
         [Range(2, 5)] public int volumeSubdivisions = 4;
 
@@ -114,6 +116,8 @@ namespace MiningOperation.Asteroids
             lod0Subdivisions = Mathf.Clamp(lod0Subdivisions, 0, 6);
             lod1Subdivisions = Mathf.Clamp(lod1Subdivisions, 0, lod0Subdivisions);
             lod2Subdivisions = Mathf.Clamp(lod2Subdivisions, 0, lod1Subdivisions);
+            lod3Subdivisions = Mathf.Clamp(lod3Subdivisions, 0, lod2Subdivisions);
+            lod4Subdivisions = Mathf.Clamp(lod4Subdivisions, 0, lod3Subdivisions);
             volumeSubdivisions = Mathf.Clamp(volumeSubdivisions, 2, 5);
         }
     }

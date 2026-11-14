@@ -5,10 +5,10 @@ namespace MiningOperation.Asteroids
 {
     public static class AsteroidGeneration
     {
-        public const int GeneratorVersion = 2;
+        public const int GeneratorVersion = 3;
 
         public static AsteroidData Create(int seed, AsteroidGeneratorSettings settings,
-            AsteroidClass? forcedClass = null, string explicitId = null)
+            AsteroidClass? forcedClass = null, string explicitId = null, float? diameterOverride = null)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             AsteroidCompositionGenerator.ValidateCatalog(settings.catalog);
@@ -21,7 +21,11 @@ namespace MiningOperation.Asteroids
                 throw new InvalidOperationException("Generator diameter settings are invalid.");
             var rng = new AsteroidRandom(unchecked((uint)seed) ^ 0xA3C59AC3u);
             // Log-uniform: many modest asteroids, few extremely large ones.
-            float diameter = Mathf.Exp(Mathf.Lerp(Mathf.Log(minDiameter), Mathf.Log(maxDiameter), rng.Value()));
+            float originalDiameterRoll = rng.Value(); // preserve class/composition RNG order
+            float diameter = diameterOverride.HasValue ? diameterOverride.Value :
+                Mathf.Exp(Mathf.Lerp(Mathf.Log(minDiameter), Mathf.Log(maxDiameter), originalDiameterRoll));
+            if (!AsteroidCompositionGenerator.IsFinite(diameter) || diameter < 1f)
+                throw new ArgumentOutOfRangeException(nameof(diameterOverride));
             float roll = rng.Value();
             float p3 = Mathf.Clamp01(settings.classIIIProbability);
             float p2 = Mathf.Min(Mathf.Clamp01(settings.classIIProbability), 1f - p3);
@@ -45,7 +49,8 @@ namespace MiningOperation.Asteroids
                 geometryProfile = profile
             };
             // This resolution is fixed by separate physics settings; LOD changes cannot affect mass.
-            Mesh mesh = AsteroidGeometryGenerator.Generate(data, settings, Mathf.Clamp(settings.volumeSubdivisions, 2, 5));
+            Mesh mesh = AsteroidGeometryGenerator.Generate(data, settings,
+                Mathf.Clamp(settings.volumeSubdivisions, 2, 5), false);
             try { data.volumeM3 = CalculateVolume(mesh); }
             finally { DestroyTemporary(mesh); }
             if (!AsteroidCompositionGenerator.IsFinite(data.volumeM3) || data.volumeM3 <= 0d)

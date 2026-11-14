@@ -15,30 +15,93 @@ namespace MiningOperation.Asteroids
         public float nominalDiameter;
     }
 
+    /// <summary>Serializable per-anchor generation overrides. Existing settings assets remain shared/read-only.</summary>
+    [Serializable]
+    public sealed class AsteroidFieldLayoutOptions
+    {
+        public AsteroidFormationType formation;
+        public int asteroidCount;
+        public float radiusMeters, thicknessMeters, arcDegrees, cloudVerticalScale;
+        public int clusterCount;
+        public float clusterRadiusFraction, minimumSurfaceGapMeters;
+        public int placementAttempts;
+        public float minimumDiameter, maximumDiameter, smallAsteroidBias;
+        public bool useComposedLayout;
+        public float clusterStrength, pocketWidthFraction;
+        public int densityPockets;
+
+        public static AsteroidFieldLayoutOptions FromSettings(AsteroidFieldSettings s)
+        {
+            return new AsteroidFieldLayoutOptions
+            {
+                formation = s.formation, asteroidCount = s.asteroidCount,
+                radiusMeters = s.radiusMeters, thicknessMeters = s.thicknessMeters,
+                arcDegrees = s.arcDegrees, cloudVerticalScale = s.cloudVerticalScale,
+                clusterCount = s.clusterCount, clusterRadiusFraction = s.clusterRadiusFraction,
+                minimumSurfaceGapMeters = s.minimumSurfaceGapMeters,
+                placementAttempts = s.placementAttempts,
+                minimumDiameter = s.asteroidSettings.minimumDiameterMeters,
+                maximumDiameter = s.asteroidSettings.maximumDiameterMeters,
+                smallAsteroidBias = s.smallAsteroidBias,
+                useComposedLayout = s.useComposedLayout,
+                clusterStrength = s.clusterStrength,
+                densityPockets = s.densityPockets,
+                pocketWidthFraction = s.pocketWidthFraction
+            };
+        }
+        public void Validate()
+        {
+            if (asteroidCount < 1 || asteroidCount > 2000 ||
+                radiusMeters < 100f || thicknessMeters < 10f ||
+                minimumDiameter < 1f || maximumDiameter < minimumDiameter ||
+                !IsFinite(minimumDiameter) || !IsFinite(maximumDiameter) ||
+                !IsFinite(radiusMeters) || !IsFinite(thicknessMeters) ||
+                !IsFinite(smallAsteroidBias) || smallAsteroidBias < 0f || smallAsteroidBias > 1f ||
+                minimumSurfaceGapMeters < 0f || placementAttempts < 1 ||
+                !Enum.IsDefined(typeof(AsteroidFormationType), formation) ||
+                !IsFinite(clusterStrength) || clusterStrength < 0f || clusterStrength > 1f ||
+                densityPockets < 0 || densityPockets > 32 ||
+                !IsFinite(pocketWidthFraction) || pocketWidthFraction < 0f || pocketWidthFraction > 0.4f)
+                throw new InvalidOperationException("Invalid field layout options.");
+        }
+        private static bool IsFinite(float f) { return !float.IsNaN(f) && !float.IsInfinity(f); }
+    }
+
     /// <summary>
     /// Pure deterministic layout stage. Computes position, orientation and IDs without
     /// generating Unity meshes. Geometry/class/resources are delegated to v1.1 generator.
     /// </summary>
     public static class AsteroidFieldLayout
     {
-        public const int LayoutVersion = 1;
+        public const int LayoutVersion = 3;
 
         public static List<AsteroidFieldPlacement> Plan(AsteroidFieldSettings settings, long fieldSeed, string fieldId)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             settings.ValidateOrThrow();
+            return Plan(settings, fieldSeed, fieldId, AsteroidFieldLayoutOptions.FromSettings(settings));
+        }
+
+        public static List<AsteroidFieldPlacement> Plan(AsteroidFieldSettings settings, long fieldSeed,
+            string fieldId, AsteroidFieldLayoutOptions options)
+        {
+            if (settings == null || options == null) throw new ArgumentNullException("settings/options");
+            settings.ValidateOrThrow();
+            options.Validate();
+            if (options.useComposedLayout)
+                return AsteroidFieldComposer.Plan(settings, fieldSeed, fieldId, options);
             if (string.IsNullOrWhiteSpace(fieldId) || fieldId.Length > 80)
                 throw new ArgumentException("Field ID must contain 1..80 non-whitespace characters.", nameof(fieldId));
 
             // Stable field identity means different fields with the same numeric seed do not share IDs.
             ulong mixed = Mix(unchecked((ulong)fieldSeed) ^ HashId(fieldId));
             var rng = new AsteroidRandom((uint)(mixed ^ (mixed >> 32)));
-            var placements = new List<AsteroidFieldPlacement>(settings.asteroidCount);
-            Vector3[] groupCenters = MakeClusterCenters(ref rng, settings);
-            float gap = settings.minimumSurfaceGapMeters;
-            int attempts = settings.placementAttempts;
-            float minD = settings.asteroidSettings.minimumDiameterMeters;
-            float maxD = settings.asteroidSettings.maximumDiameterMeters;
+            var placements = new List<AsteroidFieldPlacement>(options.asteroidCount);
+            Vector3[] groupCenters = MakeClusterCenters(ref rng, options);
+            float gap = options.minimumSurfaceGapMeters;
+            int attempts = options.placementAttempts;
+            float minD = options.minimumDiameter;
+            float maxD = options.maximumDiameter;
             if (float.IsNaN(minD) || float.IsInfinity(minD) || minD < 1f ||
                 float.IsNaN(maxD) || float.IsInfinity(maxD) || maxD < minD)
                 throw new InvalidOperationException("Invalid asteroid diameter range.");
@@ -47,19 +110,23 @@ namespace MiningOperation.Asteroids
             float cellSize = Mathf.Max(1f, maxD * 2f + gap);
             var grid = new Dictionary<Vector3Int, List<AsteroidFieldPlacement>>();
 
-            for (int i = 0; i < settings.asteroidCount; i++)
+            for (int i = 0; i < options.asteroidCount; i++)
             {
                 // Index-specific seed: count/placement changes do not alter a rock's identity.
                 long rockFieldSeed = unchecked((long)mixed);
                 int asteroidSeed = AsteroidIdUtility.DeriveSeed(rockFieldSeed, i);
                 var rockRng = new AsteroidRandom(unchecked((uint)asteroidSeed) ^ 0xA3C59AC3u);
-                float diameter = Mathf.Exp(Mathf.Lerp(Mathf.Log(minD), Mathf.Log(maxD), rockRng.Value()));
+                // Skew toward small rocks, with a small but nonzero tail of giants.
+                float u = rockRng.Value();
+                float exponent = Mathf.Lerp(1f, 5f, options.smallAsteroidBias);
+                float quantile = Mathf.Pow(u, exponent);
+                float diameter = Mathf.Exp(Mathf.Lerp(Mathf.Log(minD), Mathf.Log(maxD), quantile));
                 float exclusionRadius = diameter * 0.95f; // conservative envelope around irregular shape
                 bool accepted = false;
                 Vector3 location = Vector3.zero;
                 for (int pass = 0; pass < attempts; pass++)
                 {
-                    location = SamplePosition(ref rng, settings, i, pass, groupCenters);
+                    location = SamplePosition(ref rng, options, i, pass, groupCenters);
                     Vector3Int cell = GridCell(location, cellSize);
                     bool intersects = false;
                     for (int dx = -1; dx <= 1 && !intersects; dx++)
@@ -110,7 +177,7 @@ namespace MiningOperation.Asteroids
                 Mathf.FloorToInt(location.y / cellSize), Mathf.FloorToInt(location.z / cellSize));
         }
 
-        private static Vector3[] MakeClusterCenters(ref AsteroidRandom rng, AsteroidFieldSettings s)
+        private static Vector3[] MakeClusterCenters(ref AsteroidRandom rng, AsteroidFieldLayoutOptions s)
         {
             if (s.formation != AsteroidFormationType.ClusterGroups) return null;
             var centers = new Vector3[s.clusterCount];
@@ -125,7 +192,7 @@ namespace MiningOperation.Asteroids
             return centers;
         }
 
-        private static Vector3 SamplePosition(ref AsteroidRandom rng, AsteroidFieldSettings s, int index,
+        private static Vector3 SamplePosition(ref AsteroidRandom rng, AsteroidFieldLayoutOptions s, int index,
             int attempt, Vector3[] groupCenters)
         {
             switch (s.formation)

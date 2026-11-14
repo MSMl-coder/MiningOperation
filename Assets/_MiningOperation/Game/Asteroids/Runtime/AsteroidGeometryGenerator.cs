@@ -31,25 +31,47 @@ namespace MiningOperation.Asteroids
         public static Mesh Generate(int seed, float diameterMeters, AsteroidGeneratorSettings settings, int subdivisions)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            return GenerateV2(seed, diameterMeters, AsteroidGeometryProfile.FromSettings(settings), subdivisions);
+            return Generate(new AsteroidData
+            {
+                seed = seed, diameterMeters = diameterMeters,
+                generatorVersion = AsteroidGeneration.GeneratorVersion,
+                geometryProfile = AsteroidGeometryProfile.FromSettings(settings)
+            }, settings, subdivisions, true);
         }
 
         // Prefer THIS overload for existing asteroids; it uses the saved immutable profile.
         public static Mesh Generate(AsteroidData data, AsteroidGeneratorSettings legacySettings, int subdivisions)
+            => Generate(data, legacySettings, subdivisions, true);
+
+        internal static Mesh Generate(AsteroidData data, AsteroidGeneratorSettings legacySettings,
+            int subdivisions, bool visualColors)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             if (data.generatorVersion == 1)
             {
                 if (legacySettings == null)
                     throw new InvalidOperationException("V1 geometry requires the original Generator Settings asset.");
-                return AsteroidGeometryLegacyV1.Generate(data.seed, data.diameterMeters, legacySettings, subdivisions);
+                Mesh legacyMesh = AsteroidGeometryLegacyV1.Generate(data.seed, data.diameterMeters,
+                    legacySettings, subdivisions);
+                if (visualColors)
+                {
+                    var legacyColors = new Color32[legacyMesh.vertexCount];
+                    for (int i = 0; i < legacyColors.Length; i++)
+                        legacyColors[i] = new Color32(255, 255, 255, 255);
+                    legacyMesh.colors32 = legacyColors;
+                }
+                return legacyMesh;
             }
-            if (data.generatorVersion != AsteroidGeneration.GeneratorVersion || data.geometryProfile == null)
-                throw new InvalidOperationException("Unsupported asteroid geometry version or missing V2 shape profile.");
-            return GenerateV2(data.seed, data.diameterMeters, data.geometryProfile, subdivisions);
+            if ((data.generatorVersion != 2 && data.generatorVersion != 3) || data.geometryProfile == null)
+                throw new InvalidOperationException("Unsupported asteroid geometry version or missing shape profile.");
+            Mesh mesh = GenerateV2(data.seed, data.diameterMeters, data.geometryProfile, subdivisions, visualColors);
+            if (data.generatorVersion == 3)
+                AsteroidGeologyV3.Apply(mesh, data.seed, data.diameterMeters, data.geometryProfile);
+            return mesh;
         }
 
-        private static Mesh GenerateV2(int seed, float diameterMeters, AsteroidGeometryProfile profile, int subdivisions)
+        private static Mesh GenerateV2(int seed, float diameterMeters, AsteroidGeometryProfile profile,
+            int subdivisions, bool visualColors)
         {
             if (profile == null) throw new ArgumentNullException(nameof(profile));
             if (!AsteroidCompositionGenerator.IsFinite(diameterMeters) || diameterMeters <= 0f)
@@ -94,6 +116,25 @@ namespace MiningOperation.Asteroids
             if (vertices.Count > 65535) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.SetVertices(vertices);
             mesh.SetTriangles(sphere.triangles, 0);
+            // Avoid costly visual-only color noise during authoritative mass/volume generation.
+            if (visualColors)
+            {
+                // Geological variation only; NEVER derive surface color from resource class.
+                // Vertex colors are stable across saves and render LOD levels.
+                var colors = new Color32[vertices.Count];
+                float tint = Mathf.Clamp01(0.5f + 0.25f * Noise(shape.offset * 0.12f));
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    Vector3 p = vertices[i] / scale;
+                    float grain = Fbm(p * 4.3f + shape.offset * 0.17f, 3, 0.52f);
+                    float strata = Mathf.Abs(Fbm(p * 1.9f - shape.offset * 0.3f, 2, 0.55f));
+                    float value = Mathf.Clamp01(0.77f + grain * 0.21f - strata * 0.09f);
+                    colors[i] = new Color(value * Mathf.Lerp(0.93f, 1.07f, tint),
+                        value * Mathf.Lerp(0.96f, 1.02f, tint),
+                        value * Mathf.Lerp(1.06f, 0.90f, tint), 1f);
+                }
+                mesh.colors32 = colors;
+            }
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;

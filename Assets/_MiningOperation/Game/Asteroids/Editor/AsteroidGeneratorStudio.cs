@@ -18,8 +18,14 @@ namespace MiningOperation.Asteroids.Editor
         private Material previewFallbackMaterial;
         private Vector2 rotation = new Vector2(25f, -25f);
         private float zoom = 2.8f;
+        private bool showTuning = true;
+        private string lastGeneratedSignature;
+        private string lastGuiError;
+        private string CurrentSignature => settings == null ? string.Empty :
+            seed + "|" + forceClass + "|" + asteroidClass + "|" +
+            JsonUtility.ToJson(settings) + "|" +
+            (settings.catalog == null ? "" : JsonUtility.ToJson(settings.catalog));
 
-        [MenuItem("Tools/Mining Operation/Asteroid Generator Studio")]
         public static void Open() { GetWindow<AsteroidGeneratorStudio>("Asteroid Studio"); }
 
         private void OnDisable() { CleanupPreview(); }
@@ -35,53 +41,157 @@ namespace MiningOperation.Asteroids.Editor
 
         private void OnGUI()
         {
-            scroll = EditorGUILayout.BeginScrollView(scroll);
-            EditorGUILayout.LabelField("MINING OPERATION / ASTEROID STUDIO", EditorStyles.boldLabel);
-            settings = (AsteroidGeneratorSettings)EditorGUILayout.ObjectField("Generator Settings", settings, typeof(AsteroidGeneratorSettings), false);
-            material = (Material)EditorGUILayout.ObjectField("Surface Material", material, typeof(Material), false);
-            seed = EditorGUILayout.IntField("Seed", seed);
-            forceClass = EditorGUILayout.Toggle("Override Class", forceClass);
-            using (new EditorGUI.DisabledScope(!forceClass))
-                asteroidClass = (AsteroidClass)EditorGUILayout.EnumPopup("Class", asteroidClass);
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Create Default Assets")) CreateAssets();
-            using (new EditorGUI.DisabledScope(settings == null || settings.catalog == null))
+            try
             {
-                if (GUILayout.Button("Generate Preview")) GeneratePreview();
-                if (GUILayout.Button("Random Seed")) { seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue); GeneratePreview(); }
+                using (var scope = new EditorGUILayout.ScrollViewScope(scroll))
+                {
+                    scroll = scope.scrollPosition;
+                    DrawAuthoringUI();
+                }
+                lastGuiError = null;
             }
-            EditorGUILayout.EndHorizontal();
-            Rect area = GUILayoutUtility.GetRect(100f, 340f, GUILayout.ExpandWidth(true));
-            GUI.Box(area, GUIContent.none);
-            if (previewMesh != null && Event.current.type == EventType.Repaint) RenderPreview(area);
-            if (area.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDrag && Event.current.button == 0)
+            catch (ExitGUIException) { throw; }
+            catch (Exception e)
             {
-                rotation += Event.current.delta * 0.6f; Event.current.Use(); Repaint();
+                if (lastGuiError != e.Message) Debug.LogException(e, this);
+                lastGuiError = e.Message;
+            }
+        }
+
+        private void DrawAuthoringUI()
+        {
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("MINING OPERATION  /  ASTEROID AUTHORING", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Adjust generator settings, then preview a single asteroid.", EditorStyles.miniLabel);
+            EditorGUILayout.Space(7);
+            EditorGUILayout.LabelField("1  Inputs", EditorStyles.boldLabel);
+            settings = (AsteroidGeneratorSettings)EditorGUILayout.ObjectField(
+                "Generator Settings", settings, typeof(AsteroidGeneratorSettings), false);
+            material = (Material)EditorGUILayout.ObjectField("Surface Material", material,
+                typeof(Material), false);
+            seed = EditorGUILayout.IntField("Asteroid Seed", seed);
+            forceClass = EditorGUILayout.Toggle("Override Resource Class", forceClass);
+            using (new EditorGUI.DisabledScope(!forceClass))
+                asteroidClass = (AsteroidClass)EditorGUILayout.EnumPopup("Resource Class", asteroidClass);
+            if (settings == null || settings.catalog == null)
+                EditorGUILayout.HelpBox("Generator Settings and Resource Catalog are required. " +
+                    "Use Create Full Starter Assets to make a connected set.", MessageType.Warning);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Create Full Starter Assets")) CreateAssets();
+                using (new EditorGUI.DisabledScope(settings == null))
+                {
+                    if (GUILayout.Button("Select Generator Settings")) Selection.activeObject = settings;
+                }
+            }
+
+            if (settings != null)
+            {
+                EditorGUILayout.Space(8);
+                showTuning = EditorGUILayout.Foldout(showTuning, "2  Quick Tuning", true);
+                if (showTuning)
+                {
+                    var options = new SerializedObject(settings);
+                    options.Update();
+                    DrawProperty(options, "minimumDiameterMeters", "Min Diameter (m)");
+                    DrawProperty(options, "maximumDiameterMeters", "Max Diameter (m)");
+                    DrawProperty(options, "shapeIrregularity", "Shape Irregularity");
+                    DrawProperty(options, "craterIntensity", "Crater Depth / Strength");
+                    DrawProperty(options, "surfaceRoughness", "Surface Roughness");
+                    DrawProperty(options, "classIIProbability", "Class II Frequency");
+                    DrawProperty(options, "classIIIProbability", "Class III Frequency");
+                    DrawProperty(options, "lod0Subdivisions", "Preview Detail (LOD0)");
+                    options.ApplyModifiedProperties();
+                    EditorGUILayout.HelpBox("Shape and material are independent of resource class. " +
+                        "For advanced geology and resource tuning, select Generator Settings.", MessageType.None);
+                }
+            }
+
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("3  Interactive 3D Preview", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(settings == null || settings.catalog == null))
+                {
+                    if (GUILayout.Button("Generate Preview", GUILayout.Height(28))) GeneratePreview();
+                    if (GUILayout.Button("New Random Seed", GUILayout.Height(28)))
+                    {
+                        seed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+                        GeneratePreview();
+                    }
+                }
+                if (GUILayout.Button("Reset View", GUILayout.Height(28), GUILayout.Width(90)))
+                {
+                    rotation = new Vector2(25f, -25f);
+                    zoom = 2.8f;
+                    Repaint();
+                }
+            }
+            if (lastData != null && lastGeneratedSignature != CurrentSignature)
+                EditorGUILayout.HelpBox("Preview is OUTDATED. Generate Preview to apply the new seed/settings. " +
+                    "The previously generated object remains unchanged.", MessageType.Warning);
+            Rect area = GUILayoutUtility.GetRect(100f, 350f, GUILayout.ExpandWidth(true));
+            if (Event.current.type == EventType.Repaint)
+                EditorGUI.DrawRect(area, new Color(0.085f, 0.11f, 0.155f));
+            if (previewMesh != null && Event.current.type == EventType.Repaint) RenderPreview(area);
+            if (area.Contains(Event.current.mousePosition) && Event.current.type == EventType.MouseDrag &&
+                Event.current.button == 0)
+            {
+                rotation += Event.current.delta * 0.6f;
+                Event.current.Use();
+                Repaint();
             }
             if (area.Contains(Event.current.mousePosition) && Event.current.type == EventType.ScrollWheel)
             {
-                zoom = Mathf.Clamp(zoom + Event.current.delta.y * 0.12f, 1.5f, 8f); Event.current.Use(); Repaint();
+                zoom = Mathf.Clamp(zoom + Event.current.delta.y * 0.12f, 1.5f, 8f);
+                Event.current.Use();
+                Repaint();
             }
-            EditorGUILayout.HelpBox("Drag to rotate; scroll to zoom. Preview is not saved to the scene.", MessageType.None);
-            if (lastData != null)
+            EditorGUILayout.LabelField("Left drag: rotate    •    Mouse wheel: zoom", EditorStyles.miniLabel);
+            if (lastData == null)
             {
-                EditorGUILayout.LabelField("ID", lastData.asteroidId);
-                EditorGUILayout.LabelField("Class", lastData.asteroidClass.ToString());
-                EditorGUILayout.LabelField("Diameter (nominal)", lastData.diameterMeters.ToString("F2") + " m");
-                EditorGUILayout.LabelField("Volume", lastData.volumeM3.ToString("N1") + " m³");
-                EditorGUILayout.LabelField("Mass", (lastData.initialMassKg / 1000.0).ToString("N1") + " t");
-                EditorGUILayout.LabelField("Bulk density", lastData.densityKgM3.ToString("N0") + " kg/m³");
-                EditorGUILayout.LabelField("Porosity", (lastData.porosity01 * 100).ToString("F1") + "%");
-                EditorGUILayout.LabelField("Geometry version", lastData.generatorVersion.ToString());
-                EditorGUILayout.LabelField("LOD0 triangles", (previewMesh != null ? (previewMesh.triangles.Length / 3).ToString("N0") : "-"));
-                EditorGUILayout.LabelField("Composition", EditorStyles.boldLabel);
-                foreach (var part in lastData.composition)
-                    EditorGUILayout.LabelField(part.resourceId, (part.fraction * 100).ToString("F2") + "%");
-                EditorGUILayout.Space(8);
-                if (GUILayout.Button("Create Asteroid In Scene")) CreateSceneAsteroid();
-                if (GUILayout.Button("Export Mesh Asset")) ExportMesh();
+                EditorGUILayout.HelpBox("No asteroid preview yet.", MessageType.None);
+                return;
             }
-            EditorGUILayout.EndScrollView();
+
+            EditorGUILayout.Space(7);
+            EditorGUILayout.LabelField("4  Generated Characteristics", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("ID", lastData.asteroidId);
+            EditorGUILayout.LabelField("Class", lastData.asteroidClass.ToString());
+            EditorGUILayout.LabelField("Diameter", lastData.diameterMeters.ToString("F2") + " m");
+            EditorGUILayout.LabelField("Volume", lastData.volumeM3.ToString("N1") + " m³");
+            EditorGUILayout.LabelField("Mass", (lastData.initialMassKg / 1000.0).ToString("N1") + " t");
+            EditorGUILayout.LabelField("Bulk Density", lastData.densityKgM3.ToString("N0") + " kg/m³");
+            EditorGUILayout.LabelField("Porosity", (lastData.porosity01 * 100).ToString("F1") + "%");
+            EditorGUILayout.LabelField("Mesh Triangles", previewMesh == null ? "–" :
+                (previewMesh.triangles.Length / 3).ToString("N0"));
+            if (lastData.composition != null)
+                foreach (var part in lastData.composition)
+                {
+                    EditorGUILayout.LabelField(part.resourceId, (part.fraction * 100).ToString("F2") + "%");
+                    Rect track = GUILayoutUtility.GetRect(80f, 4f, GUILayout.ExpandWidth(true));
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        EditorGUI.DrawRect(track, new Color(0.12f, 0.16f, 0.19f));
+                        EditorGUI.DrawRect(new Rect(track.x, track.y,
+                            track.width * Mathf.Clamp01((float)part.fraction), track.height),
+                            new Color(0.34f, 0.73f, 0.84f));
+                    }
+                }
+            EditorGUILayout.Space(8);
+            using (new EditorGUI.DisabledScope(settings == null || lastGeneratedSignature != CurrentSignature))
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Create Asteroid in Scene", GUILayout.Height(30))) CreateSceneAsteroid();
+                if (GUILayout.Button("Export Mesh Asset", GUILayout.Height(30))) ExportMesh();
+            }
+        }
+
+        private static void DrawProperty(SerializedObject obj, string key, string label)
+        {
+            SerializedProperty property = obj.FindProperty(key);
+            if (property != null) EditorGUILayout.PropertyField(property, new GUIContent(label));
         }
 
         private void GeneratePreview()
@@ -91,6 +201,7 @@ namespace MiningOperation.Asteroids.Editor
                 lastData = AsteroidGeneration.Create(seed, settings, forceClass ? asteroidClass : (AsteroidClass?)null);
                 if (previewMesh != null) DestroyImmediate(previewMesh);
                 previewMesh = AsteroidGeometryGenerator.Generate(lastData, settings, settings.lod0Subdivisions);
+                lastGeneratedSignature = CurrentSignature;
                 Repaint();
             }
             catch (Exception ex) { Debug.LogException(ex); EditorUtility.DisplayDialog("Asteroid Generation Error", ex.Message, "OK"); }
@@ -147,43 +258,15 @@ namespace MiningOperation.Asteroids.Editor
 
         private void CreateAssets()
         {
-            const string folder = "Assets/MiningOperation/AsteroidData";
-            EnsureFolder(folder);
-            string catalogPath = AssetDatabase.GenerateUniqueAssetPath(folder + "/AsteroidResourceCatalog.asset");
-            var catalog = AsteroidResourceCatalog.CreateDefaultRuntime();
-            catalog.hideFlags = HideFlags.None;
-            AssetDatabase.CreateAsset(catalog, catalogPath);
-            var newSettings = CreateInstance<AsteroidGeneratorSettings>();
-            newSettings.catalog = catalog;
-            string settingsPath = AssetDatabase.GenerateUniqueAssetPath(folder + "/AsteroidGeneratorSettings.asset");
-            AssetDatabase.CreateAsset(newSettings, settingsPath);
-            string materialPath = AssetDatabase.GenerateUniqueAssetPath(folder + "/AsteroidSurface.mat");
-            Shader shader = FindAvailableShader();
-            if (shader != null)
-            {
-                var newMaterial = new Material(shader);
-                if (newMaterial.HasProperty("_BaseColor"))
-                    newMaterial.SetColor("_BaseColor", new Color(0.43f, 0.40f, 0.35f));
-                if (newMaterial.HasProperty("_Color"))
-                    newMaterial.SetColor("_Color", new Color(0.43f, 0.40f, 0.35f));
-                AssetDatabase.CreateAsset(newMaterial, materialPath);
-                material = newMaterial;
-            }
-            AssetDatabase.SaveAssets();
-            settings = newSettings;
-            Selection.activeObject = newSettings;
-        }
-
-        private static void EnsureFolder(string path)
-        {
-            string[] parts = path.Split('/');
-            string parent = parts[0];
-            for (int i = 1; i < parts.Length; i++)
-            {
-                string current = parent + "/" + parts[i];
-                if (!AssetDatabase.IsValidFolder(current)) AssetDatabase.CreateFolder(parent, parts[i]);
-                parent = current;
-            }
+            if (settings != null && !EditorUtility.DisplayDialog("Create another asset set?",
+                "Create a new connected Resource Catalog, Generator Settings and Field Settings? " +
+                "Existing assets will be preserved.", "Create New Set", "Cancel")) return;
+            AsteroidFieldSettings field = AsteroidAuthoringWorkflow.CreateReadyAssets();
+            settings = field.asteroidSettings;
+            material = field.asteroidMaterial;
+            lastGeneratedSignature = null;
+            Selection.activeObject = settings;
+            Repaint();
         }
 
         private void CreateSceneAsteroid()

@@ -43,7 +43,7 @@ namespace MiningOperation.Asteroids.Tests
         }
 
         [Test]
-        public void NewAsteroidHasAllRenderComponentsAndThreeLODs()
+        public void NewAsteroidHasAllRenderComponentsAndFiveLODs()
         {
             var root = new GameObject("MO Regression Asteroid");
             try
@@ -60,8 +60,8 @@ namespace MiningOperation.Asteroids.Tests
                 Assert.IsNotNull(renderer);
                 Assert.IsNotNull(group);
                 Assert.IsNotNull(filter.sharedMesh);
-                Assert.AreEqual(3, group.GetLODs().Length);
-                Assert.AreEqual(2, root.GetComponentsInChildren<AsteroidGeneratedLODMarker>(true).Length);
+                Assert.AreEqual(5, group.GetLODs().Length);
+                Assert.AreEqual(4, root.GetComponentsInChildren<AsteroidGeneratedLODMarker>(true).Length);
             }
             finally { Object.DestroyImmediate(root); }
         }
@@ -81,8 +81,8 @@ namespace MiningOperation.Asteroids.Tests
                 instance.RebuildGeometry();
 
                 Assert.AreNotSame(oldMesh, root.GetComponent<MeshFilter>().sharedMesh);
-                Assert.AreEqual(2, root.GetComponentsInChildren<AsteroidGeneratedLODMarker>(true).Length);
-                Assert.AreEqual(3, root.GetComponent<LODGroup>().GetLODs().Length);
+                Assert.AreEqual(4, root.GetComponentsInChildren<AsteroidGeneratedLODMarker>(true).Length);
+                Assert.AreEqual(5, root.GetComponent<LODGroup>().GetLODs().Length);
             }
             finally { Object.DestroyImmediate(root); }
         }

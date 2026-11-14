@@ -102,8 +102,10 @@ namespace MiningOperation.Asteroids
             int high = Mathf.Clamp(settings.lod0Subdivisions, 0, 6);
             int mid = Mathf.Clamp(settings.lod1Subdivisions, 0, high);
             int low = Mathf.Clamp(settings.lod2Subdivisions, 0, mid);
-            int[] divisions = { high, mid, low };
-            var generated = new List<Mesh>(3);
+            int farther = Mathf.Clamp(settings.lod3Subdivisions, 0, low);
+            int farthest = Mathf.Clamp(settings.lod4Subdivisions, 0, farther);
+            int[] divisions = { high, mid, low, farther, farthest };
+            var generated = new List<Mesh>(5);
             try
             {
                 foreach (int division in divisions)
@@ -135,7 +137,8 @@ namespace MiningOperation.Asteroids
 
             if (surfaceMaterial != null)
                 primary.sharedMaterial = surfaceMaterial;
-            var levels = new LOD[3];
+            var levels = new LOD[5];
+            float[] cutoffs = { 0.55f, 0.31f, 0.16f, 0.065f, 0.001f };
             for (int i = 0; i < generated.Count; i++)
             {
                 MeshRenderer targetRenderer;
@@ -153,12 +156,14 @@ namespace MiningOperation.Asteroids
                     targetRenderer = child.AddComponent<MeshRenderer>();
                     targetRenderer.sharedMaterials = primary.sharedMaterials;
                 }
-                levels[i] = new LOD(i == 0 ? 0.5f : i == 1 ? 0.2f : 0.035f, new[] { targetRenderer });
+                levels[i] = new LOD(cutoffs[i], new[] { targetRenderer });
             }
             ownedMeshes.AddRange(generated);
             LODGroup lodGroup = GetComponent<LODGroup>();
             if (lodGroup == null)
                 lodGroup = gameObject.AddComponent<LODGroup>();
+            lodGroup.fadeMode = LODFadeMode.CrossFade;
+            lodGroup.animateCrossFading = true;
             lodGroup.SetLODs(levels);
             lodGroup.RecalculateBounds();
             MeshCollider collider = GetComponent<MeshCollider>();
