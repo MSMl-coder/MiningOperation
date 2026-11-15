@@ -43,10 +43,16 @@ namespace MiningOperation.Asteroids
                 settings == null || settings.asteroidSettings == null || !settings.useGpuFarField)
                 return;
             snapshot = field;
-            material = AsteroidStableMaterials.Create(settings.distantMaterial,
-                settings.allowExperimentalRockShaders, new Color(.83f, .82f, .78f),
+            material = AsteroidStableMaterials.Create(
+                (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf) && settings.iceMaterial != null
+                    ? settings.iceMaterial : settings.distantMaterial,
+                settings.allowExperimentalRockShaders,
+                (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf)
+                    ? new Color(.76f, .89f, 1f, 1f) : new Color(.83f, .82f, .78f),
                 "MO Exact Far Asteroids (runtime)",
-                settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
+                (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf) ? null : settings.rockAlbedoTexture,
+                (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf) ? null : settings.rockNormalTexture,
+                settings.rockNormalStrength);
             if (material == null) { snapshot = null; return; }
             visibilityGrid = new AsteroidVisibilityGrid(650f);
             for (int i = 0; i < snapshot.asteroids.Count; ++i)
@@ -74,7 +80,9 @@ namespace MiningOperation.Asteroids
                     diameterMeters = record.asteroid.diameterMeters,
                     geometryProfile = record.asteroid.geometryProfile
                 };
-                Mesh mesh = AsteroidGeometryGenerator.Generate(body, settings.asteroidSettings,
+                AsteroidGeneratorSettings generation = (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) &&
+                    settings.iceGeneratorSettings != null ? settings.iceGeneratorSettings : settings.asteroidSettings;
+                Mesh mesh = AsteroidGeometryGenerator.Generate(body, generation,
                     Mathf.Clamp(settings.exactFarSubdivisions, 1, 3));
                 // Explicitly NOT the generated V2 prefix: AsteroidInstance must not
                 // destroy this borrowed mesh when switching to a detailed one.

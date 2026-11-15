@@ -5,10 +5,14 @@ namespace MiningOperation.Asteroids
 {
     public static class AsteroidGeneration
     {
-        public const int GeneratorVersion = 5;
+        public const int GeneratorVersion = 8; // New rock geometry family/distribution update; legacy V1..V5 and V6/V7 ice shelves remain supported.
+        public const int IceShelfGeneratorVersion = 6;
+        public const int IceShelfContinentalGeneratorVersion = 7;
 
         public static AsteroidData Create(int seed, AsteroidGeneratorSettings settings,
-            AsteroidClass? forcedClass = null, string explicitId = null, float? diameterOverride = null)
+            AsteroidClass? forcedClass = null, string explicitId = null, float? diameterOverride = null,
+            bool iceShelf = false, float shelfThicknessRatio = .10f, float shelfFractureStrength = .28f,
+            bool continentalShelf = false, float shelfCollisionStrength = .58f, float shelfRiftDepth = .48f)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             AsteroidCompositionGenerator.ValidateCatalog(settings.catalog);
@@ -32,6 +36,15 @@ namespace MiningOperation.Asteroids
             AsteroidClass astClass = forcedClass ?? (roll < p3 ? AsteroidClass.III :
                 roll < p3 + p2 ? AsteroidClass.II : AsteroidClass.I);
             var profile = AsteroidGeometryProfile.FromSettings(settings);
+            if (iceShelf)
+            {
+                profile.iceShelf = true;
+                profile.continentalShelf = continentalShelf;
+                profile.shelfThicknessRatio = Mathf.Clamp(shelfThicknessRatio, .025f, .28f);
+                profile.shelfFractureStrength = Mathf.Clamp01(shelfFractureStrength);
+                profile.shelfCollisionStrength = Mathf.Clamp01(shelfCollisionStrength);
+                profile.shelfRiftDepth = Mathf.Clamp01(shelfRiftDepth);
+            }
             var composition = AsteroidCompositionGenerator.Generate(ref rng, settings.catalog, astClass, settings);
             double minPorosity = Mathf.Clamp(settings.minimumPorosity, 0f, 0.7f);
             double maxPorosity = Math.Max(minPorosity, Mathf.Clamp(settings.maximumPorosity, 0f, 0.7f));
@@ -41,7 +54,7 @@ namespace MiningOperation.Asteroids
             {
                 asteroidId = id,
                 seed = seed,
-                generatorVersion = GeneratorVersion,
+                generatorVersion = iceShelf ? (continentalShelf ? IceShelfContinentalGeneratorVersion : IceShelfGeneratorVersion) : GeneratorVersion,
                 asteroidClass = astClass,
                 diameterMeters = diameter,
                 composition = composition,

@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: MO_IceResourceCatalog
+  m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime:MiningOperation.Asteroids:AsteroidResourceCatalog
+  resources:
+  - id: water_ice
+    displayName: Water Ice
+    rarity: 0
+    selectionWeight: 7
+    densityKgM3: 930
+  - id: hydrated_silicates
+    displayName: Hydrated Silicates
+    rarity: 0
+    selectionWeight: 2
+    densityKgM3: 2600
+  - id: ammonia_ice
+    displayName: Ammonia Ice
+    rarity: 1
+    selectionWeight: 3
+    densityKgM3: 820
+  - id: methane_ice
+    displayName: Methane Ice
+    rarity: 1
+    selectionWeight: 2
+    densityKgM3: 520
+  - id: noble_cryosalts
+    displayName: Noble Cryosalts
+    rarity: 2
+    selectionWeight: 1
+    densityKgM3: 1700
+  - id: exotic_cryo_crystals
+    displayName: Exotic Cryocrystals
+    rarity: 3
+    selectionWeight: 0.35
+    densityKgM3: 1500

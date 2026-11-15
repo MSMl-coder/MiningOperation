@@ -36,17 +36,19 @@ Shader "Mining Operation/Space Gradient Sky"
             }
             half4 frag(v2f i) : SV_Target
             {
-                float3 d = normalize(i.dir);
-                float h = smoothstep(-0.65,0.80,d.y);
-                float3 sky = lerp(_SkyBottom.rgb,_SkyMiddle.rgb,smoothstep(-0.85,0.15,d.y));
-                sky = lerp(sky,_SkyTop.rgb,smoothstep(-0.05,0.86,d.y));
-                float cloud = noise3(d*5.5+13.0)*0.62 + noise3(d*13.0+2.3)*0.38;
-                float halo = pow(saturate(1-abs(d.y+0.15)),2.3);
-                sky += _NebulaIntensity*halo*saturate(cloud-0.36)*float3(0.19,0.22,0.20);
-                float3 starCell = floor(d*370.0);
-                float star = step(0.9988,hash31(starCell)) * pow(saturate(hash31(starCell+7.1)),3);
-                sky += star * _StarIntensity * float3(0.85,0.91,1.0);
-                return half4(sky,1);
+                float3 dir = normalize(i.dir);
+                float h = dir.y;
+                float3 sky = lerp(_SkyBottom.rgb, _SkyMiddle.rgb,
+                    smoothstep(-0.88, 0.18, h));
+                sky = lerp(sky, _SkyTop.rgb, smoothstep(0.03, 0.92, h));
+                // An understated horizon wash rather than a repeating nebula texture.
+                float horizon = exp(-pow((h + 0.09) * 2.8, 2.0));
+                sky += horizon * _NebulaIntensity * float3(0.20, 0.22, 0.17);
+                float3 cell = floor(dir * 490.0);
+                float star = step(0.9994, hash31(cell)) *
+                             pow(saturate(hash31(cell + 7.1)), 3.0);
+                sky += star * _StarIntensity * float3(0.90, 0.94, 1.0);
+                return half4(saturate(sky), 1);
             }
             ENDHLSL
         }

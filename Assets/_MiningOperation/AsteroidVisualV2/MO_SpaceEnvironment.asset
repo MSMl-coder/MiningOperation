@@ -13,21 +13,21 @@ MonoBehaviour:
   m_Name: MO_SpaceEnvironment
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidEnvironmentProfile
   gradientSkyMaterial: {fileID: 2100000, guid: 68993b6796eec46099da6cafbb863d3f, type: 2}
-  upperColor: {r: 0.024, g: 0.067, b: 0.14, a: 1}
-  horizonColor: {r: 0.24, g: 0.39, b: 0.44, a: 1}
-  lowerColor: {r: 0.055, g: 0.14, b: 0.24, a: 1}
-  nebulaStrength: 0.24
-  starStrength: 0.12
-  keyColor: {r: 1, g: 0.94, b: 0.81, a: 1}
-  keyIntensity: 1.3
-  fillColor: {r: 0.15, g: 0.27, b: 0.37, a: 1}
-  fillIntensity: 0.35
-  ambientColor: {r: 0.17, g: 0.22, b: 0.27, a: 1}
-  keyDirectionEuler: {x: 35, y: -40, z: 0}
-  hazeColor: {r: 0.24, g: 0.39, b: 0.45, a: 1}
-  hazeStartMeters: 3000
-  hazeEndMeters: 16500
-  hazeStrength: 0.5
+  upperColor: {r: 0.13, g: 0.29, b: 0.42, a: 1}
+  horizonColor: {r: 0.36, g: 0.53, b: 0.56, a: 1}
+  lowerColor: {r: 0.18, g: 0.34, b: 0.43, a: 1}
+  nebulaStrength: 0.035
+  starStrength: 0.065
+  keyColor: {r: 1, g: 0.97, b: 0.89, a: 1}
+  keyIntensity: 1.85
+  fillColor: {r: 0.54, g: 0.7, b: 0.82, a: 1}
+  fillIntensity: 0.62
+  ambientColor: {r: 0.4, g: 0.46, b: 0.5, a: 1}
+  keyDirectionEuler: {x: 32, y: -48, z: 0}
+  hazeColor: {r: 0.35, g: 0.49, b: 0.54, a: 1}
+  hazeStartMeters: 3800
+  hazeEndMeters: 22000
+  hazeStrength: 0.09
   planetMaterial: {fileID: 2100000, guid: c95511c83821a4cb1875e10230b14b19, type: 2}
   showPlanet: 0
   planetPosition: {x: -32000, y: 3000, z: 46000}

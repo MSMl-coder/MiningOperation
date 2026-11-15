@@ -10,7 +10,9 @@ namespace MiningOperation.Asteroids
         ClusterGroups = 2,
         BrokenBelt = 3,
         Stream = 4,
-        BrokenRing = 5
+        BrokenRing = 5,
+        IceShelfFragments = 6,
+        IceShelfContinents = 7
     }
 
     [CreateAssetMenu(menuName = "Mining Operation/Asteroids/Field Settings", fileName = "AsteroidFieldSettings")]
@@ -21,6 +23,15 @@ namespace MiningOperation.Asteroids
         public Material asteroidMaterial;
         [Tooltip("Optional lightweight material for GPU-instanced distant rocks.")]
         public Material distantMaterial;
+        [Header("V2.3 - additional environment types")]
+        [Tooltip("URP/Lit ice material. Created via the unified Field Studio installer.")]
+        public Material iceMaterial;
+        [Tooltip("Independent symbolic ice resources and geometry. Created by Install Ice & Gas Materials.")]
+        public AsteroidGeneratorSettings iceGeneratorSettings;
+        [Tooltip("URP/Particles/Unlit transparent gas sprite material.")]
+        public Material gasParticleMaterial;
+        [Tooltip("Optional v2.4 volumetric URP material. If unsupported, gas automatically falls back to the particle material.")]
+        public Material gasVolumeMaterial;
         [Header("V2.1.1 - safe materials and streaming")]
         [Tooltip("OFF = use stable URP/Lit for near, far and debris. Enable only after validating custom shaders in Game view.")]
         public bool allowExperimentalRockShaders = false;

@@ -26,7 +26,11 @@ namespace MiningOperation.Asteroids
         private void Update()
         {
             // Reapply shader globals in play mode when camera/scene reloads; no allocations.
-            if (Application.isPlaying && profile != null) ApplyHaze();
+            if (Application.isPlaying && profile != null)
+            {
+                ApplyHaze();
+                EnsureGameCameraBackground();
+            }
         }
 
         [ContextMenu("Apply Space Environment")]
@@ -70,7 +74,10 @@ namespace MiningOperation.Asteroids
             {
                 fillLight.type = LightType.Directional;
                 fillLight.color = profile.fillColor;
-                fillLight.intensity = Mathf.Clamp(profile.fillIntensity, 0f, 1f);
+                fillLight.intensity = Mathf.Clamp(profile.fillIntensity, 0f, 2f);
+                // The fill must illuminate the side opposite the main sun; otherwise
+                // every asteroid is rendered as a nearly uniform dark silhouette.
+                fillLight.transform.rotation = Quaternion.Euler(20f, profile.keyDirectionEuler.y + 160f, 0f);
                 fillLight.shadows = LightShadows.None;
             }
             if (distantPlanet != null)
@@ -81,13 +88,20 @@ namespace MiningOperation.Asteroids
                 if (profile.planetMaterial != null) distantPlanet.sharedMaterial = profile.planetMaterial;
             }
             // Affect only the main gameplay camera, never UI/preview/secondary cameras.
-            Camera camera = Camera.main;
-            if (camera != null)
-            {
-                camera.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
-                camera.backgroundColor = profile.lowerColor;
-            }
+            EnsureGameCameraBackground();
             ApplyHaze();
+        }
+
+        private void EnsureGameCameraBackground()
+        {
+            if (profile == null) return;
+            Camera camera = Camera.main;
+            if (camera == null) return;
+            CameraClearFlags wanted = RenderSettings.skybox != null
+                ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+            if (camera.clearFlags != wanted) camera.clearFlags = wanted;
+            if (camera.backgroundColor != profile.lowerColor)
+                camera.backgroundColor = profile.lowerColor;
         }
 
         private void ApplyHaze()

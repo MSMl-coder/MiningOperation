@@ -76,22 +76,131 @@ namespace MiningOperation.Asteroids.Editor
             RemoveOldVisuals(env.gameObject);
             env.Apply();
 
-            Camera camera = Camera.main;
-            if (camera == null) camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
-            if (camera != null)
-            {
-                Undo.RecordObject(camera, "Repair Mining camera");
-                camera.clearFlags = profile.gradientSkyMaterial != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
-                camera.backgroundColor = profile.lowerColor;
-                camera.farClipPlane = Mathf.Max(camera.farClipPlane, 40000f);
-                var cameraData = camera.GetComponent<UniversalAdditionalCameraData>();
-                // Don't force the addition of URP Additional Camera Data or multiple Volumes.
-                if (cameraData != null) cameraData.renderPostProcessing = false;
-                EditorUtility.SetDirty(camera);
-            }
+            ApplyCameraSettings(profile);
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(env.gameObject.scene);
             Debug.Log("[MO] Repaired sky, one key + one fill light, planet disabled, legacy auto visuals cleaned. No asteroid snapshot changed.");
+        }
+
+        public static void InstallRetroEnvironment()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorUtility.DisplayDialog("Edit Mode required", "Leave Play Mode before applying the retro space setup.", "OK");
+                return;
+            }
+            EnsureFolder();
+            AsteroidEnvironmentProfile profile = LoadOrCreate<AsteroidEnvironmentProfile>(Folder + "/MO_SpaceEnvironment.asset");
+            Undo.RecordObject(profile, "Apply retro Mining Operation space profile");
+            profile.upperColor = new Color(0.13f, 0.29f, 0.42f);
+            profile.horizonColor = new Color(0.36f, 0.53f, 0.56f);
+            profile.lowerColor = new Color(0.18f, 0.34f, 0.43f);
+            profile.nebulaStrength = 0.035f;
+            profile.starStrength = 0.065f;
+            profile.keyColor = new Color(1f, 0.97f, 0.89f);
+            profile.keyIntensity = 1.85f;
+            profile.fillColor = new Color(0.54f, 0.70f, 0.82f);
+            profile.fillIntensity = 0.62f;
+            profile.ambientColor = new Color(0.40f, 0.46f, 0.50f);
+            profile.keyDirectionEuler = new Vector3(32f, -48f, 0f);
+            profile.hazeColor = new Color(0.35f, 0.49f, 0.54f);
+            profile.hazeStartMeters = 3800f;
+            profile.hazeEndMeters = 22000f;
+            profile.hazeStrength = 0.09f;
+            profile.showPlanet = false;
+
+            var gradientShader = Shader.Find("Mining Operation/Space Gradient Sky");
+            Material gradientMaterial = AssetDatabase.LoadAssetAtPath<Material>(Folder + "/MO_SpaceGradient.mat");
+            if (gradientShader != null && gradientShader.isSupported)
+            {
+                if (gradientMaterial == null)
+                {
+                    gradientMaterial = new Material(gradientShader);
+                    AssetDatabase.CreateAsset(gradientMaterial, Folder + "/MO_SpaceGradient.mat");
+                }
+                else
+                {
+                    Undo.RecordObject(gradientMaterial, "Repair gradient shader");
+                    gradientMaterial.shader = gradientShader;
+                }
+                profile.gradientSkyMaterial = gradientMaterial;
+                EditorUtility.SetDirty(gradientMaterial);
+            }
+            else profile.gradientSkyMaterial = null;
+            EditorUtility.SetDirty(profile);
+
+            var env = UnityEngine.Object.FindFirstObjectByType<AsteroidSpaceEnvironment>(FindObjectsInactive.Include);
+            if (env == null)
+            {
+                var go = new GameObject("MO Space Environment V2");
+                Undo.RegisterCreatedObjectUndo(go, "Add Mining retro environment");
+                env = Undo.AddComponent<AsteroidSpaceEnvironment>(go);
+            }
+            Undo.RecordObject(env, "Apply retro Mining environment");
+            env.profile = profile;
+            env.keyLight = GetOrCreateLight("MO V2 Sun (Key)");
+            env.fillLight = GetOrCreateLight("MO V2 Ambient Fill");
+            env.distantPlanet = null;
+            if (!env.gameObject.activeSelf)
+            {
+                Undo.RecordObject(env.gameObject, "Activate retro space environment");
+                env.gameObject.SetActive(true);
+            }
+            if (!env.enabled)
+            {
+                Undo.RecordObject(env, "Enable retro space environment");
+                env.enabled = true;
+            }
+            RemoveOldVisuals(env.gameObject);
+            env.Apply();
+            ApplyCameraSettings(profile);
+            RenderSettings.fog = false;
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(env.gameObject.scene);
+            Debug.Log("[MO] Bright retro sky and clean key/fill lighting applied to the gameplay camera. No asteroid snapshot changed.");
+        }
+
+        private static void ApplyCameraSettings(AsteroidEnvironmentProfile profile)
+        {
+            Camera camera = Camera.main;
+            if (camera != null)
+            {
+                var mainData = camera.GetComponent<UniversalAdditionalCameraData>();
+                if (mainData != null && mainData.renderType == CameraRenderType.Overlay)
+                    camera = null;
+            }
+            if (camera == null)
+            {
+                Camera[] cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Exclude,
+                    FindObjectsSortMode.None);
+                for (int i = 0; i < cameras.Length; i++)
+                {
+                    var candidate = cameras[i];
+                    if (candidate == null || !candidate.enabled || candidate.targetTexture != null) continue;
+                    var urp = candidate.GetComponent<UniversalAdditionalCameraData>();
+                    if (urp != null && urp.renderType == CameraRenderType.Overlay) continue;
+                    if (camera == null || candidate.depth > camera.depth) camera = candidate;
+                }
+            }
+            if (camera == null)
+            {
+                Debug.LogWarning("[MO] No active Base gameplay camera. Retro sky profile is installed, but a Game camera must clear to Skybox to display it.");
+                return;
+            }
+            Undo.RecordObject(camera, "Apply retro space camera clear");
+            camera.clearFlags = profile.gradientSkyMaterial != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+            camera.backgroundColor = profile.lowerColor;
+            camera.farClipPlane = Mathf.Max(camera.farClipPlane, 40000f);
+            var cameraData = camera.GetComponent<UniversalAdditionalCameraData>();
+            if (cameraData != null)
+            {
+                if (cameraData.renderType == CameraRenderType.Overlay)
+                    Debug.LogWarning("[MO] The MainCamera is an URP Overlay camera. Background skybox is drawn by the Base camera; change that Base camera's clear mode.");
+                Undo.RecordObject(cameraData, "Disable legacy post processing for retro field");
+                cameraData.renderPostProcessing = false;
+                EditorUtility.SetDirty(cameraData);
+            }
+            EditorUtility.SetDirty(camera);
         }
 
         /// <summary>Only named obsolete automatically generated visuals are removed.

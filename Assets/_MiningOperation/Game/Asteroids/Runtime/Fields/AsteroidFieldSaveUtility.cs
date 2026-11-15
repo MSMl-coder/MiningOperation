@@ -21,6 +21,8 @@ namespace MiningOperation.Asteroids
         public string fieldId;
         public long fieldSeed;
         public AsteroidFormationType formation;
+        // Default 0 (Rock) preserves all older JSON snapshots.
+        public MiningFieldContent contentType;
         // Added in v2.2. Old saves deserialize as 0; does not alter geometry or ore.
         public double simulationSeconds;
         public List<AsteroidFieldRecord> asteroids = new List<AsteroidFieldRecord>();
@@ -77,11 +79,19 @@ namespace MiningOperation.Asteroids
 
         public static void Validate(AsteroidFieldSnapshot snapshot)
         {
-            if (snapshot == null || snapshot.schemaVersion != SchemaVersion ||
-                (snapshot.layoutVersion != 1 && snapshot.layoutVersion != 2 && snapshot.layoutVersion != 3) ||
+            if (snapshot == null)
+                throw new InvalidOperationException("Invalid field snapshot: snapshot is null.");
+            // Layout V4 added Z constraints; V5 corrects them to vertical Y. Saved V1/V2/V3/V4 fields
+            // remain supported, while genuinely unknown future versions are rejected.
+            if (snapshot.layoutVersion < 1 || snapshot.layoutVersion > AsteroidFieldLayout.LayoutVersion)
+                throw new InvalidOperationException(
+                    $"Unsupported field layout version {snapshot.layoutVersion}; supported: 1..{AsteroidFieldLayout.LayoutVersion}.");
+            if (snapshot.schemaVersion != SchemaVersion ||
                 string.IsNullOrWhiteSpace(snapshot.fieldId) || snapshot.fieldId.Length > 80 ||
                 snapshot.asteroids == null || snapshot.asteroids.Count > 2000 ||
                 !Enum.IsDefined(typeof(AsteroidFormationType), snapshot.formation) ||
+                !Enum.IsDefined(typeof(MiningFieldContent), snapshot.contentType) ||
+                snapshot.contentType == MiningFieldContent.Gas ||
                 double.IsNaN(snapshot.simulationSeconds) || double.IsInfinity(snapshot.simulationSeconds) ||
                 snapshot.simulationSeconds < 0d)
                 throw new InvalidOperationException("Invalid or unsupported field snapshot.");

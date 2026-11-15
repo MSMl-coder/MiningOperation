@@ -81,7 +81,9 @@ namespace MiningOperation.Asteroids
         {
             if (record == null || string.IsNullOrWhiteSpace(record.asteroidId) || record.asteroidId.Length > 256)
                 throw new InvalidOperationException("Asteroid save is missing a valid ID.");
-            if (record.generatorVersion != 1 && record.generatorVersion != 2 && record.generatorVersion != 3 && record.generatorVersion != 4 && record.generatorVersion != 5)
+            if (record.generatorVersion != 1 && record.generatorVersion != 2 && record.generatorVersion != 3 && record.generatorVersion != 4 && record.generatorVersion != 5 && record.generatorVersion != 8 &&
+                record.generatorVersion != AsteroidGeneration.IceShelfGeneratorVersion &&
+                record.generatorVersion != AsteroidGeneration.IceShelfContinentalGeneratorVersion)
                 throw new InvalidOperationException("Unsupported geometry version for " + record.asteroidId);
             if (record.asteroidClass < 1 || record.asteroidClass > 3 ||
                 !Finite(record.diameterMeters) || record.diameterMeters <= 0d ||
@@ -103,6 +105,14 @@ namespace MiningOperation.Asteroids
                     !Finite(p.minimumAxisScale) || p.minimumAxisScale < 0.1 || p.minimumAxisScale > 1 ||
                     p.minCraters < 0 || p.maxCraters < p.minCraters || p.maxCraters > 60)
                     throw new InvalidOperationException("Invalid V2 geometry snapshot for " + record.asteroidId);
+                if ((record.generatorVersion == AsteroidGeneration.IceShelfGeneratorVersion ||
+                     record.generatorVersion == AsteroidGeneration.IceShelfContinentalGeneratorVersion) &&
+                    (!p.iceShelf || !Finite(p.shelfThicknessRatio) || p.shelfThicknessRatio < .025f ||
+                     p.shelfThicknessRatio > .28f || !Finite(p.shelfFractureStrength) ||
+                     p.shelfFractureStrength < 0f || p.shelfFractureStrength > 1f ||
+                     !Finite(p.shelfCollisionStrength) || p.shelfCollisionStrength < 0f || p.shelfCollisionStrength > 1f ||
+                     !Finite(p.shelfRiftDepth) || p.shelfRiftDepth < 0f || p.shelfRiftDepth > 1f))
+                    throw new InvalidOperationException("Invalid ice shelf geometry snapshot for " + record.asteroidId);
             }
             if (record.composition == null || record.composition.Count == 0)
                 throw new InvalidOperationException("Missing composition for " + record.asteroidId);

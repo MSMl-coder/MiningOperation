@@ -51,6 +51,13 @@ namespace MiningOperation.Asteroids
         public int minCraters;
         public int maxCraters;
         public float minimumAxisScale;
+        // V6-only ice shelf recipe; defaults preserve all pre-V6 save records.
+        public bool iceShelf;
+        public bool continentalShelf;
+        public float shelfThicknessRatio;
+        public float shelfFractureStrength;
+        public float shelfCollisionStrength;
+        public float shelfRiftDepth;
 
         public AsteroidGeometryProfile Copy()
         {

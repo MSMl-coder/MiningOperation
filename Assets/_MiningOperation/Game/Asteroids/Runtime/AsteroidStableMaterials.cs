@@ -19,8 +19,13 @@ namespace MiningOperation.Asteroids
                 result = new Material(requested);
             else if (standard != null && standard.isSupported)
             {
-                result = new Material(standard);
-                AsteroidRockSurface.Apply(result, rockAlbedo, rockNormal, color, normalStrength);
+                bool trustedLit = requested != null && requested.shader == standard &&
+                    requested.shader.isSupported;
+                result = trustedLit ? new Material(requested) : new Material(standard);
+                // Ice uses an authored URP/Lit material; do not overwrite it with rock maps.
+                // Rock surfaces retain their explicit single-wrap albedo/normal textures.
+                if (rockAlbedo != null || !trustedLit)
+                    AsteroidRockSurface.Apply(result, rockAlbedo, rockNormal, color, normalStrength);
                 // Ambient light from the scene is preferred to an emissive glow.
                 if (result.HasProperty("_EmissionColor")) result.SetColor("_EmissionColor", new Color(.018f, .023f, .026f));
                 result.EnableKeyword("_EMISSION");

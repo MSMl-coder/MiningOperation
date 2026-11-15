@@ -45,6 +45,14 @@ namespace MiningOperation.Asteroids.Editor
         public static string Validate(AsteroidFieldSpawnPoint spawn)
         {
             if (spawn == null) return "Select or create a Spawn Point.";
+            if (spawn.contentType == MiningFieldContent.Gas)
+            {
+                if (spawn.settings == null) return "Assign Field Settings to configure gas materials.";
+                if (string.IsNullOrWhiteSpace(spawn.fieldId)) return "Gas Field ID is empty.";
+                if (spawn.gasCloudCount < 1 || spawn.gasPuffsPerCloud < 1 || spawn.gasCloudRadiusMeters < 50f)
+                    return "Gas cloud count, particle count or radius is invalid.";
+                return DuplicateId(spawn) ? "Another Spawn Point uses the same Field ID." : null;
+            }
             if (!IsReady(spawn.settings)) return "Missing Field Settings, Generator Settings or Resource Catalog.";
             if (string.IsNullOrWhiteSpace(spawn.fieldId)) return "Field ID is empty.";
             if (DuplicateId(spawn)) return "Another Spawn Point in the scene uses the same Field ID.";
@@ -52,6 +60,15 @@ namespace MiningOperation.Asteroids.Editor
             {
                 spawn.settings.ValidateOrThrow();
                 AsteroidCompositionGenerator.ValidateCatalog(spawn.settings.asteroidSettings.catalog);
+                if (spawn.contentType == MiningFieldContent.Ice || spawn.contentType == MiningFieldContent.IceShelf ||
+                    spawn.BuildOptions(spawn.settings).formation == AsteroidFormationType.IceShelfFragments ||
+                    spawn.BuildOptions(spawn.settings).formation == AsteroidFormationType.IceShelfContinents)
+                {
+                    if (spawn.settings.iceGeneratorSettings == null ||
+                        spawn.settings.iceGeneratorSettings.catalog == null)
+                        return "Ice settings missing. Open VISUALS > Install / Repair Ice & Gas Materials.";
+                    AsteroidCompositionGenerator.ValidateCatalog(spawn.settings.iceGeneratorSettings.catalog);
+                }
                 spawn.BuildOptions(spawn.settings).Validate();
             }
             catch (Exception e) { return e.Message; }
@@ -76,12 +93,21 @@ namespace MiningOperation.Asteroids.Editor
         public static string Signature(AsteroidFieldSpawnPoint spawn)
         {
             if (spawn == null || !IsReady(spawn.settings)) return string.Empty;
+            spawn.EnsureLocalSettings();
             AsteroidFieldLayoutOptions layout = spawn.BuildOptions(spawn.settings);
+            // Ice generation uses a distinct resource catalog. Include it in invalidation.
+            string iceContent = (spawn.contentType == MiningFieldContent.Ice || spawn.contentType == MiningFieldContent.IceShelf ||
+                layout.formation == AsteroidFormationType.IceShelfFragments || layout.formation == AsteroidFormationType.IceShelfContinents) &&
+                spawn.settings.iceGeneratorSettings != null && spawn.settings.iceGeneratorSettings.catalog != null
+                ? "|ice=" + JsonUtility.ToJson(spawn.settings.iceGeneratorSettings) +
+                  JsonUtility.ToJson(spawn.settings.iceGeneratorSettings.catalog)
+                : string.Empty;
             var signature = new StringBuilder(1024);
-            signature.Append("v2|layout=").Append(AsteroidFieldLayout.LayoutVersion)
+            signature.Append("v2.6.2|layout=").Append(AsteroidFieldLayout.LayoutVersion)
                 .Append("|generator=").Append(AsteroidGeneration.GeneratorVersion)
                 .Append("|id=").Append(spawn.fieldId)
                 .Append("|seed=").Append(spawn.fieldSeed)
+                .Append("|content=").Append(spawn.contentType)
                 .Append("|options=").Append(JsonUtility.ToJson(layout));
             AsteroidGeneratorSettings g = spawn.settings.asteroidSettings;
             // Explicit value serialization avoids Unity Object instance-ID changes across reloads.
@@ -99,6 +125,39 @@ namespace MiningOperation.Asteroids.Editor
                 if (r == null) { signature.Append("|null-resource"); continue; }
                 signature.Append("|resource=").Append(r.id).Append(',').Append(r.rarity).Append(',');
                 Append(signature, r.selectionWeight, r.densityKgM3);
+            }
+            signature.Append(iceContent);
+            if (layout.formation == AsteroidFormationType.IceShelfFragments ||
+                layout.formation == AsteroidFormationType.IceShelfContinents ||
+                spawn.contentType == MiningFieldContent.IceShelf)
+                Append(signature, spawn.shelfThicknessRatio, spawn.shelfFractureStrength,
+                    spawn.shelfCollisionStrength, spawn.shelfRiftDepth);
+            // Backwards-compatible signatures: old fields with inherited geology keep
+            // the exact v2.5.1 hash. Only a genuine local shape change adds inputs.
+            if (spawn.rockGeology != null && !spawn.rockGeology.Matches(spawn.settings.asteroidSettings))
+            {
+                signature.Append("|spawnRockGeology=");
+                Append(signature, spawn.rockGeology.shapeIrregularity,
+                    spawn.rockGeology.craterIntensity, spawn.rockGeology.surfaceRoughness,
+                    spawn.rockGeology.minimumAxisScale);
+                signature.Append('|').Append(spawn.rockGeology.minCraters).Append(',')
+                    .Append(spawn.rockGeology.maxCraters);
+            }
+            if (spawn.iceGeology != null && spawn.settings.iceGeneratorSettings != null &&
+                !spawn.iceGeology.Matches(spawn.settings.iceGeneratorSettings))
+            {
+                signature.Append("|spawnIceGeology=");
+                Append(signature, spawn.iceGeology.shapeIrregularity,
+                    spawn.iceGeology.craterIntensity, spawn.iceGeology.surfaceRoughness,
+                    spawn.iceGeology.minimumAxisScale);
+                signature.Append('|').Append(spawn.iceGeology.minCraters).Append(',')
+                    .Append(spawn.iceGeology.maxCraters);
+            }
+            if (spawn.visuals != null && spawn.visuals.artDirection != MOArtDirection.Default)
+            {
+                signature.Append("|artDirection=").Append(spawn.visuals.artDirection);
+                Append(signature, spawn.visuals.retroNoiseSuppression,
+                    spawn.visuals.retroCraterReadability, spawn.visuals.retroSilhouetteStrength);
             }
             string source = signature.ToString();
             unchecked

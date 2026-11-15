@@ -31,12 +31,19 @@ namespace MiningOperation.Asteroids
         public Material RuntimeAsteroidMaterial => GetRuntimeNearMaterial();
         private Material GetRuntimeNearMaterial()
         {
-            if (settings == null) return null;
+            EnsureLocalSettings();
+            if (ActiveSettings == null) return null;
             if (runtimeNearMaterial == null)
-                runtimeNearMaterial = AsteroidStableMaterials.Create(settings.asteroidMaterial,
-                    settings.allowExperimentalRockShaders, new Color(.87f, .85f, .81f, 1f),
+                runtimeNearMaterial = AsteroidStableMaterials.Create(
+                    snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && ActiveSettings.iceMaterial != null
+                        ? ActiveSettings.iceMaterial : ActiveSettings.asteroidMaterial,
+                    ActiveSettings.allowExperimentalRockShaders,
+                    snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf)
+                        ? new Color(.78f, .90f, 1f, 1f) : new Color(.87f, .85f, .81f, 1f),
                     "MO Near Stable URP (runtime)",
-                    settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
+                    snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockAlbedoTexture,
+                    snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockNormalTexture,
+                    ActiveSettings.rockNormalStrength);
             return runtimeNearMaterial;
         }
 
@@ -53,10 +60,55 @@ namespace MiningOperation.Asteroids
         public int FarRenderedCount => farRenderer != null ? farRenderer.VisibleCount : 0;
         public bool FarGpuReady => farRenderer != null && farRenderer.Ready;
         public float NearestDistanceMeters { get; private set; } = -1f;
-        public float DetailedRangeMeters => settings != null ?
-            (settings.useGpuFarField ? Mathf.Min(settings.spawnDistanceMeters, settings.detailedDistanceMeters) : settings.spawnDistanceMeters) : 0f;
+        public float DetailedRangeMeters => ActiveSettings != null ?
+            (ActiveSettings.useGpuFarField ? Mathf.Min(ActiveSettings.spawnDistanceMeters, ActiveSettings.detailedDistanceMeters) : ActiveSettings.spawnDistanceMeters) : 0f;
 
-        public AsteroidFieldSettings Settings { get => settings; set => settings = value; }
+        // Shared asset is never mutated. All per-spawn overrides live in short-lived
+        // non-serialized copies owned by this controller.
+        [NonSerialized] private AsteroidFieldSettings localSettings;
+        [NonSerialized] private AsteroidGeneratorSettings localRockGenerator;
+        [NonSerialized] private AsteroidGeneratorSettings localIceGenerator;
+        [NonSerialized] private AsteroidFieldSettings resolvedSource;
+        private AsteroidFieldSettings ActiveSettings => localSettings != null ? localSettings : settings;
+
+        public AsteroidFieldSettings Settings
+        {
+            get => ActiveSettings;
+            set => settings = value; // Avoid DestroyImmediate from SpawnPoint.OnValidate.
+        }
+
+        private void EnsureLocalSettings()
+        {
+            if (localSettings != null && resolvedSource == settings) return;
+            if (settings == null) return;
+            var anchor = GetComponent<AsteroidFieldSpawnPoint>();
+            if (anchor == null) return;
+            if (localSettings != null) ReleaseLocalSettings();
+            localSettings = anchor.CreateResolvedSettings(out localRockGenerator, out localIceGenerator);
+            resolvedSource = settings;
+        }
+
+        /// <summary>Called after Inspector/Studio changes outside Play Mode.
+        /// Existing snapshot and resource state are intentionally not modified.</summary>
+        public void InvalidateLocalConfiguration()
+        {
+            if (Application.isPlaying) return;
+            ReleaseLocalSettings();
+            if (runtimeNearMaterial != null)
+                AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
+            runtimeNearMaterial = null;
+        }
+
+        private void ReleaseLocalSettings()
+        {
+            if (localRockGenerator != null) AsteroidGeneration.DestroyTemporary(localRockGenerator);
+            if (localIceGenerator != null) AsteroidGeneration.DestroyTemporary(localIceGenerator);
+            if (localSettings != null) AsteroidGeneration.DestroyTemporary(localSettings);
+            localSettings = null;
+            localRockGenerator = null;
+            localIceGenerator = null;
+            resolvedSource = null;
+        }
         public string FieldId { get => fieldId; set => fieldId = value; }
         public long FieldSeed { get => fieldSeed; set => fieldSeed = value; }
         public Transform Viewer { get => viewer; set => viewer = value; }
@@ -65,7 +117,7 @@ namespace MiningOperation.Asteroids
         public void ForceRebuildImmediately()
         {
             BeginBuild();
-            while (IsBuilding) BuildStep(Mathf.Max(1, settings.generatePerFrame));
+            while (IsBuilding) BuildStep(Mathf.Max(1, ActiveSettings.generatePerFrame));
         }
         public AsteroidFieldSnapshot Snapshot => snapshot;
         public int ActiveCount => active.Count;
@@ -73,14 +125,19 @@ namespace MiningOperation.Asteroids
         public int BuildTotal => pending != null ? pending.Count : 0;
         public bool IsBuilding => pending != null;
 
-        private void OnEnable() { ReindexChildren(); }
+        private void OnEnable()
+        {
+            ReindexChildren();
+            if (Application.isPlaying) EnsureLocalSettings();
+        }
 
         private void Start()
         {
             if (!Application.isPlaying) return;
+            EnsureLocalSettings();
             // Scenes authored with v1.2 may contain hundreds of persisted child GameObjects.
             // Remove the transient graphics in play mode; retain their authoritative records.
-            if (settings != null && settings.useGpuFarField)
+            if (ActiveSettings != null && ActiveSettings.useGpuFarField)
                 ClearSpawned();
             InitializeFarRendering();
             if (snapshot == null && generateOnStart)
@@ -90,7 +147,7 @@ namespace MiningOperation.Asteroids
         private void LateUpdate()
         {
             if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null) return;
-            if (settings != null && settings.enableAsteroidRotation)
+            if (ActiveSettings != null && ActiveSettings.enableAsteroidRotation)
             {
                 foreach (var pair in active)
                 {
@@ -99,7 +156,7 @@ namespace MiningOperation.Asteroids
                     if (instance == null || record == null || record.asteroid == null) continue;
                     instance.transform.localRotation = AsteroidSpin.Evaluate(record.localRotation,
                         record.asteroid.seed, record.asteroid.diameterMeters,
-                        snapshot.simulationSeconds, settings.rotationSpeedMultiplier * settings.mineableRotationMultiplier);
+                        snapshot.simulationSeconds, ActiveSettings.rotationSpeedMultiplier * ActiveSettings.mineableRotationMultiplier);
                 }
             }
             farRenderer?.Render(snapshot.simulationSeconds);
@@ -112,12 +169,14 @@ namespace MiningOperation.Asteroids
             farRenderer = null;
             debrisRenderer?.Dispose();
             debrisRenderer = null;
+            ReleaseLocalSettings();
         }
 
         private void OnDestroy()
         {
             if (runtimeNearMaterial != null) AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
             runtimeNearMaterial = null;
+            ReleaseLocalSettings();
         }
 
         private void InitializeFarRendering()
@@ -127,13 +186,13 @@ namespace MiningOperation.Asteroids
             debrisRenderer?.Dispose();
             debrisRenderer = null;
             if (!Application.isPlaying || !runtimeStreaming || snapshot == null ||
-                settings == null || !settings.useGpuFarField) return;
-            farRenderer = new AsteroidFieldFarRenderer(transform, settings);
+                ActiveSettings == null || !ActiveSettings.useGpuFarField) return;
+            farRenderer = new AsteroidFieldFarRenderer(transform, ActiveSettings);
             farRenderer.Initialize(snapshot);
-            if (settings.enableDecorativeDebris &&
-                settings.decorativeRockCount + settings.microFragmentCount > 0)
+            if (ActiveSettings.enableDecorativeDebris &&
+                ActiveSettings.decorativeRockCount + ActiveSettings.microFragmentCount > 0)
             {
-                debrisRenderer = new AsteroidDebrisRenderer(transform, settings);
+                debrisRenderer = new AsteroidDebrisRenderer(transform, ActiveSettings);
                 debrisRenderer.Initialize(snapshot);
             }
             nextStreamingTick = 0f;
@@ -148,7 +207,7 @@ namespace MiningOperation.Asteroids
             while (IsBuilding)
             {
                 bool succeeded = true;
-                try { BuildStep(settings.generatePerFrame); }
+                try { BuildStep(ActiveSettings.generatePerFrame); }
                 catch (Exception e) { Debug.LogException(e, this); succeeded = false; }
                 if (!succeeded)
                 {
@@ -162,35 +221,42 @@ namespace MiningOperation.Asteroids
 
         private void Update()
         {
-            if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null || settings == null) return;
-            if (settings.enableAsteroidRotation)
+            if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null || ActiveSettings == null) return;
+            if (ActiveSettings.enableAsteroidRotation)
                 snapshot.simulationSeconds += Math.Max(0d, (double)Time.deltaTime);
             // Avoid expensive scans on every render frame in dense fields.
             if (Time.time < nextStreamingTick) return;
-            nextStreamingTick = Time.time + Mathf.Max(0.1f, settings.streamingTickSeconds);
+            nextStreamingTick = Time.time + Mathf.Max(0.1f, ActiveSettings.streamingTickSeconds);
             Transform focus = viewer != null ? viewer : (Camera.main != null ? Camera.main.transform : null);
             if (focus == null) return;
-            StreamAround(focus.position, settings.instantiatePerFrame);
+            StreamAround(focus.position, ActiveSettings.instantiatePerFrame);
         }
 
         public void BeginBuild()
         {
-            if (settings == null) throw new InvalidOperationException("Missing Field Settings.");
-            settings.ValidateOrThrow();
+            EnsureLocalSettings();
+            if (ActiveSettings == null) throw new InvalidOperationException("Missing Field Settings.");
+            ActiveSettings.ValidateOrThrow();
             CancelBuild();
             var anchor = GetComponent<AsteroidFieldSpawnPoint>();
-            AsteroidFieldLayoutOptions layout = anchor != null && anchor.useOverrides
-                ? anchor.BuildOptions(settings) : AsteroidFieldLayoutOptions.FromSettings(settings);
+            AsteroidFieldLayoutOptions layout = anchor != null
+                ? anchor.BuildOptions(ActiveSettings) : AsteroidFieldLayoutOptions.FromSettings(ActiveSettings);
             buildFormation = layout.formation;
-            pending = AsteroidFieldLayout.Plan(settings, fieldSeed, fieldId, layout);
+            pending = AsteroidFieldLayout.Plan(ActiveSettings, fieldSeed, fieldId, layout);
             cursor = 0;
             building = new AsteroidFieldSnapshot
             {
                 schemaVersion = AsteroidFieldSaveUtility.SchemaVersion,
-                layoutVersion = layout.useComposedLayout ? AsteroidFieldLayout.LayoutVersion : 2,
+                layoutVersion = AsteroidFieldLayout.LayoutVersion,
                 fieldId = fieldId,
                 fieldSeed = fieldSeed,
                 formation = buildFormation,
+                contentType = anchor != null && anchor.contentType == MiningFieldContent.IceShelf ||
+                    buildFormation == AsteroidFormationType.IceShelfFragments ||
+                    buildFormation == AsteroidFormationType.IceShelfContinents
+                    ? MiningFieldContent.IceShelf
+                    : ((anchor != null && anchor.contentType == MiningFieldContent.Ice)
+                        ? MiningFieldContent.Ice : MiningFieldContent.Rock),
                 asteroids = new List<AsteroidFieldRecord>(pending.Count)
             };
         }
@@ -199,14 +265,28 @@ namespace MiningOperation.Asteroids
         public bool BuildStep(int budget)
         {
             if (pending == null) return true;
-            if (settings == null) throw new InvalidOperationException("Field Settings removed during build.");
+            if (ActiveSettings == null) throw new InvalidOperationException("Field Settings removed during build.");
             budget = Mathf.Max(1, budget);
             int until = Math.Min(pending.Count, cursor + budget);
             for (; cursor < until; cursor++)
             {
                 var place = pending[cursor];
-                var data = AsteroidGeneration.Create(place.asteroidSeed, settings.asteroidSettings,
-                    null, place.asteroidId, place.nominalDiameter);
+                AsteroidGeneratorSettings generation = (building.contentType == MiningFieldContent.Ice ||
+                    building.contentType == MiningFieldContent.IceShelf) && ActiveSettings.iceGeneratorSettings != null
+                    ? ActiveSettings.iceGeneratorSettings : ActiveSettings.asteroidSettings;
+                var anchor = GetComponent<AsteroidFieldSpawnPoint>();
+                bool shelf = building.contentType == MiningFieldContent.IceShelf ||
+                    building.formation == AsteroidFormationType.IceShelfFragments ||
+                    building.formation == AsteroidFormationType.IceShelfContinents;
+                bool continentalShelf = building.contentType == MiningFieldContent.IceShelf ||
+                    building.formation == AsteroidFormationType.IceShelfContinents;
+                var data = AsteroidGeneration.Create(place.asteroidSeed, generation,
+                    null, place.asteroidId, place.nominalDiameter, shelf,
+                    anchor != null ? anchor.shelfThicknessRatio : .10f,
+                    anchor != null ? anchor.shelfFractureStrength : .28f,
+                    continentalShelf,
+                    anchor != null ? anchor.shelfCollisionStrength : .58f,
+                    anchor != null ? anchor.shelfRiftDepth : .48f);
                 building.asteroids.Add(new AsteroidFieldRecord
                 {
                     index = place.index,
@@ -219,6 +299,11 @@ namespace MiningOperation.Asteroids
             AsteroidFieldSaveUtility.Validate(building);
             ClearSpawned();
             snapshot = building;
+            if (runtimeNearMaterial != null)
+            {
+                AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
+                runtimeNearMaterial = null;
+            }
             InitializeFarRendering();
             pending = null;
             building = null;
@@ -255,14 +340,14 @@ namespace MiningOperation.Asteroids
         /// </summary>
         public void StreamAround(Vector3 worldPosition, int spawnBudget)
         {
-            if (settings == null || snapshot == null) return;
-            bool optimized = settings.useGpuFarField;
+            if (ActiveSettings == null || snapshot == null) return;
+            bool optimized = ActiveSettings.useGpuFarField;
             // Pre-1.3 serialized spawnDistanceMeters can remain 13km; optimized mode
             // deliberately uses a MUCH smaller range for expensive unique meshes.
-            float nearMeters = optimized ? Mathf.Min(settings.spawnDistanceMeters,
-                settings.detailedDistanceMeters) : settings.spawnDistanceMeters;
-            float farMeters = optimized ? Mathf.Min(settings.despawnDistanceMeters,
-                Mathf.Max(nearMeters + 200f, nearMeters * 1.3f)) : settings.despawnDistanceMeters;
+            float nearMeters = optimized ? Mathf.Min(ActiveSettings.spawnDistanceMeters,
+                ActiveSettings.detailedDistanceMeters) : ActiveSettings.spawnDistanceMeters;
+            float farMeters = optimized ? Mathf.Min(ActiveSettings.despawnDistanceMeters,
+                Mathf.Max(nearMeters + 200f, nearMeters * 1.3f)) : ActiveSettings.despawnDistanceMeters;
             float nearSq = nearMeters * nearMeters;
             float closestSq = float.MaxValue;
             float farSq = farMeters * farMeters;
@@ -279,7 +364,7 @@ namespace MiningOperation.Asteroids
             foreach (AsteroidFieldRecord record in snapshot.asteroids)
             {
                 if (record == null || record.asteroid == null ||
-                    (settings.hideDepletedAsteroids && record.asteroid.remainingMassKg <= 0d)) continue;
+                    (ActiveSettings.hideDepletedAsteroids && record.asteroid.remainingMassKg <= 0d)) continue;
                 float d = (WorldPosition(record) - worldPosition).sqrMagnitude;
                 if (d < closestSq) closestSq = d;
                 bool isActive = active.ContainsKey(record.index);
@@ -292,8 +377,8 @@ namespace MiningOperation.Asteroids
                 int comparison = a.Value.CompareTo(b.Value);
                 return comparison != 0 ? comparison : a.Key.index.CompareTo(b.Key.index);
             });
-            int maxDetailed = optimized ? Mathf.Min(settings.maxActiveAsteroids,
-                settings.maxDetailedAsteroids) : settings.maxActiveAsteroids;
+            int maxDetailed = optimized ? Mathf.Min(ActiveSettings.maxActiveAsteroids,
+                ActiveSettings.maxDetailedAsteroids) : ActiveSettings.maxActiveAsteroids;
             int permittedCount = Math.Min(maxDetailed, candidates.Count);
             var permitted = new HashSet<int>();
             for (int i = 0; i < permittedCount; i++) permitted.Add(candidates[i].Key.index);
@@ -317,7 +402,7 @@ namespace MiningOperation.Asteroids
             }
             // Upgrade at most one currently near asteroid per streaming tick.
             // The first visible mesh is borrowed from far rendering (identical silhouette).
-            if (optimized && settings.fastStreamedAsteroids && settings.exactFarShape &&
+            if (optimized && ActiveSettings.fastStreamedAsteroids && ActiveSettings.exactFarShape &&
                 remaining == initialBudget)
                 UpgradeClosestVisible(candidates, permittedCount);
             UpdateDistantInstances(worldPosition);
@@ -334,11 +419,11 @@ namespace MiningOperation.Asteroids
                     continue;
                 float distance = Mathf.Sqrt(candidates[i].Value);
                 float ratio = distance / Mathf.Max(1f, record.asteroid.diameterMeters);
-                int target = settings.exactFarSubdivisions;
+                int target = ActiveSettings.exactFarSubdivisions;
                 if (ratio < 14f) target = Mathf.Max(target, 3);
                 if (ratio < 3.5f) target = Mathf.Max(target, 4);
                 if (ratio < 1.2f) target = Mathf.Max(target, 5);
-                target = Mathf.Min(target, settings.maximumStreamedSubdivisions);
+                target = Mathf.Min(target, ActiveSettings.maximumStreamedSubdivisions);
                 if (instance.StreamedSubdivisionLevel >= 0 && instance.StreamedSubdivisionLevel < target)
                 {
                     instance.UpgradeStreamedGeometry(instance.StreamedSubdivisionLevel + 1);
@@ -360,7 +445,7 @@ namespace MiningOperation.Asteroids
 
         private AsteroidInstance Spawn(AsteroidFieldRecord record)
         {
-            if (settings == null || settings.asteroidSettings == null) return null;
+            if (ActiveSettings == null || ActiveSettings.asteroidSettings == null) return null;
             if (inactiveCache.TryGetValue(record.index, out var cached) && cached != null &&
                 cached.Data != null && cached.Data.asteroidId == record.asteroid.asteroidId)
             {
@@ -397,21 +482,22 @@ namespace MiningOperation.Asteroids
             member.index = record.index;
             member.fieldId = snapshot.fieldId;
             var asteroid = go.AddComponent<AsteroidInstance>();
-            asteroid.Settings = settings.asteroidSettings;
-            asteroid.SurfaceMaterial = GetRuntimeNearMaterial() != null ? GetRuntimeNearMaterial() : settings.asteroidMaterial;
-            asteroid.AddMeshCollider = settings.meshColliders;
+            asteroid.Settings = snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) &&
+                ActiveSettings.iceGeneratorSettings != null ? ActiveSettings.iceGeneratorSettings : ActiveSettings.asteroidSettings;
+            asteroid.SurfaceMaterial = GetRuntimeNearMaterial() != null ? GetRuntimeNearMaterial() : ActiveSettings.asteroidMaterial;
+            asteroid.AddMeshCollider = ActiveSettings.meshColliders;
             try
             {
-                if (settings.fastStreamedAsteroids && settings.exactFarShape && farRenderer != null &&
+                if (ActiveSettings.fastStreamedAsteroids && ActiveSettings.exactFarShape && farRenderer != null &&
                     farRenderer.Ready)
                 {
                     Mesh shared = farRenderer.GetOrCreateMesh(record);
                     if (shared != null)
-                        asteroid.RestoreStreamedShared(record.asteroid, settings.exactFarSubdivisions, shared);
-                    else asteroid.RestoreStreamed(record.asteroid, settings.streamedMeshSubdivisions);
+                        asteroid.RestoreStreamedShared(record.asteroid, ActiveSettings.exactFarSubdivisions, shared);
+                    else asteroid.RestoreStreamed(record.asteroid, ActiveSettings.streamedMeshSubdivisions);
                 }
-                else if (settings.fastStreamedAsteroids)
-                    asteroid.RestoreStreamed(record.asteroid, settings.streamedMeshSubdivisions);
+                else if (ActiveSettings.fastStreamedAsteroids)
+                    asteroid.RestoreStreamed(record.asteroid, ActiveSettings.streamedMeshSubdivisions);
                 else
                     asteroid.Restore(record.asteroid);
                 active[record.index] = asteroid;
@@ -487,8 +573,8 @@ namespace MiningOperation.Asteroids
             {
                 if (record != null && asteroid.Data != null) record.asteroid = asteroid.Capture();
                 asteroid.gameObject.SetActive(false);
-                int cacheLimit = Application.isPlaying && settings != null && settings.fastStreamedAsteroids
-                    ? settings.cachedStreamedAsteroids : 0;
+                int cacheLimit = Application.isPlaying && ActiveSettings != null && ActiveSettings.fastStreamedAsteroids
+                    ? ActiveSettings.cachedStreamedAsteroids : 0;
                 if (cacheLimit > 0)
                 {
                     inactiveCache[index] = asteroid;
@@ -563,6 +649,11 @@ namespace MiningOperation.Asteroids
             CancelBuild();
             ClearSpawned();
             snapshot = loaded;
+            if (runtimeNearMaterial != null)
+            {
+                AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
+                runtimeNearMaterial = null;
+            }
             fieldId = loaded.fieldId;
             fieldSeed = loaded.fieldSeed;
             var anchor = GetComponent<AsteroidFieldSpawnPoint>();
@@ -570,6 +661,7 @@ namespace MiningOperation.Asteroids
             {
                 anchor.fieldId = loaded.fieldId;
                 anchor.fieldSeed = loaded.fieldSeed;
+                anchor.contentType = loaded.contentType;
             }
             InitializeFarRendering();
         }

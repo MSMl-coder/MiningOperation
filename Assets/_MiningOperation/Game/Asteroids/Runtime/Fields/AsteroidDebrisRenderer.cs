@@ -43,10 +43,16 @@ namespace MiningOperation.Asteroids
             Dispose();
             if (snapshot?.asteroids == null || snapshot.asteroids.Count == 0 ||
                 settings == null || !settings.enableDecorativeDebris || !SystemInfo.supportsInstancing) return;
-            material = AsteroidStableMaterials.Create(settings.distantMaterial,
-                settings.allowExperimentalRockShaders, new Color(.78f, .80f, .80f, 1f),
+            material = AsteroidStableMaterials.Create(
+                (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceMaterial != null
+                    ? settings.iceMaterial : settings.distantMaterial,
+                settings.allowExperimentalRockShaders,
+                (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf)
+                    ? new Color(.79f, .91f, 1f, 1f) : new Color(.78f, .80f, .80f, 1f),
                 "MO Debris Stable URP (runtime)",
-                settings.rockAlbedoTexture, settings.rockNormalTexture, settings.rockNormalStrength);
+                (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : settings.rockAlbedoTexture,
+                (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : settings.rockNormalTexture,
+                settings.rockNormalStrength);
             if (material == null) return;
             material.enableInstancing = true;
             material.hideFlags = HideFlags.DontSave;
@@ -59,10 +65,13 @@ namespace MiningOperation.Asteroids
                     seed = AsteroidIdUtility.DeriveSeed(snapshot.fieldSeed ^ 0x2940DE52L, i + 123),
                     generatorVersion = 3,
                     diameterMeters = 1f,
-                    geometryProfile = AsteroidGeometryProfile.FromSettings(settings.asteroidSettings)
+                    geometryProfile = AsteroidGeometryProfile.FromSettings(
+                        (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceGeneratorSettings != null
+                            ? settings.iceGeneratorSettings : settings.asteroidSettings)
                 };
-                Mesh mesh = AsteroidGeometryGenerator.Generate(rock, settings.asteroidSettings,
-                    1);
+                Mesh mesh = AsteroidGeometryGenerator.Generate(rock,
+                    (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceGeneratorSettings != null
+                        ? settings.iceGeneratorSettings : settings.asteroidSettings, 1);
                 mesh.name = "MO_Debris_Variant_" + i;
                 mesh.hideFlags = HideFlags.DontSave;
                 meshes.Add(mesh);

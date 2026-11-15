@@ -29,6 +29,9 @@ namespace MiningOperation.Asteroids
         public bool useComposedLayout;
         public float clusterStrength, pocketWidthFraction;
         public int densityPockets;
+        public MOFieldDepthMode depthMode;
+        public float depthCenterY, depthHalfRange, depthJitter;
+        public bool flattenRotationToPlane;
 
         public static AsteroidFieldLayoutOptions FromSettings(AsteroidFieldSettings s)
         {
@@ -46,7 +49,12 @@ namespace MiningOperation.Asteroids
                 useComposedLayout = s.useComposedLayout,
                 clusterStrength = s.clusterStrength,
                 densityPockets = s.densityPockets,
-                pocketWidthFraction = s.pocketWidthFraction
+                pocketWidthFraction = s.pocketWidthFraction,
+                depthMode = MOFieldDepthMode.Free3D,
+                depthCenterY = 0f,
+                depthHalfRange = 0f,
+                depthJitter = 0f,
+                flattenRotationToPlane = false
             };
         }
         public void Validate()
@@ -59,8 +67,11 @@ namespace MiningOperation.Asteroids
                 !IsFinite(smallAsteroidBias) || smallAsteroidBias < 0f || smallAsteroidBias > 1f ||
                 minimumSurfaceGapMeters < 0f || placementAttempts < 1 ||
                 !Enum.IsDefined(typeof(AsteroidFormationType), formation) ||
+                !Enum.IsDefined(typeof(MOFieldDepthMode), depthMode) ||
                 !IsFinite(clusterStrength) || clusterStrength < 0f || clusterStrength > 1f ||
                 densityPockets < 0 || densityPockets > 32 ||
+                !IsFinite(depthCenterY) || !IsFinite(depthHalfRange) || depthHalfRange < 0f ||
+                !IsFinite(depthJitter) || depthJitter < 0f ||
                 !IsFinite(pocketWidthFraction) || pocketWidthFraction < 0f || pocketWidthFraction > 0.4f)
                 throw new InvalidOperationException("Invalid field layout options.");
         }
@@ -73,7 +84,9 @@ namespace MiningOperation.Asteroids
     /// </summary>
     public static class AsteroidFieldLayout
     {
-        public const int LayoutVersion = 3;
+        public const int LayoutVersion = 6;
+        private struct PlannedRock { public int index; public int asteroidSeed; public float diameter; public float radius; }
+        private struct AnchorRock { public Vector3 position; public float diameter; public float radius; }
 
         public static List<AsteroidFieldPlacement> Plan(AsteroidFieldSettings settings, long fieldSeed, string fieldId)
         {
@@ -93,7 +106,6 @@ namespace MiningOperation.Asteroids
             if (string.IsNullOrWhiteSpace(fieldId) || fieldId.Length > 80)
                 throw new ArgumentException("Field ID must contain 1..80 non-whitespace characters.", nameof(fieldId));
 
-            // Stable field identity means different fields with the same numeric seed do not share IDs.
             ulong mixed = Mix(unchecked((ulong)fieldSeed) ^ HashId(fieldId));
             var rng = new AsteroidRandom((uint)(mixed ^ (mixed >> 32)));
             var placements = new List<AsteroidFieldPlacement>(options.asteroidCount);
@@ -105,28 +117,22 @@ namespace MiningOperation.Asteroids
             if (float.IsNaN(minD) || float.IsInfinity(minD) || minD < 1f ||
                 float.IsNaN(maxD) || float.IsInfinity(maxD) || maxD < minD)
                 throw new InvalidOperationException("Invalid asteroid diameter range.");
-            // Broadphase grid: avoid O(N² * placementAttempts) when building large belts.
-            // Any two exclusion spheres fit within one of the adjacent grid cells.
             float cellSize = Mathf.Max(1f, maxD * 2f + gap);
             var grid = new Dictionary<Vector3Int, List<AsteroidFieldPlacement>>();
+            var anchors = new List<AnchorRock>();
+            List<PlannedRock> plan = BuildPlan(mixed, options);
 
-            for (int i = 0; i < options.asteroidCount; i++)
+            foreach (var rockInfo in plan)
             {
-                // Index-specific seed: count/placement changes do not alter a rock's identity.
-                long rockFieldSeed = unchecked((long)mixed);
-                int asteroidSeed = AsteroidIdUtility.DeriveSeed(rockFieldSeed, i);
-                var rockRng = new AsteroidRandom(unchecked((uint)asteroidSeed) ^ 0xA3C59AC3u);
-                // Skew toward small rocks, with a small but nonzero tail of giants.
-                float u = rockRng.Value();
-                float exponent = Mathf.Lerp(1f, 5f, options.smallAsteroidBias);
-                float quantile = Mathf.Pow(u, exponent);
-                float diameter = Mathf.Exp(Mathf.Lerp(Mathf.Log(minD), Mathf.Log(maxD), quantile));
-                float exclusionRadius = diameter * 0.95f; // conservative envelope around irregular shape
                 bool accepted = false;
                 Vector3 location = Vector3.zero;
+                bool preferSatellite = ShouldPreferSatellite(rockInfo.diameter, options, anchors.Count);
                 for (int pass = 0; pass < attempts; pass++)
                 {
-                    location = SamplePosition(ref rng, options, i, pass, groupCenters);
+                    location = preferSatellite && pass < Mathf.Max(2, attempts / 3)
+                        ? SampleNearAnchor(ref rng, options, anchors, rockInfo.radius)
+                        : SamplePosition(ref rng, options, rockInfo.index, pass, groupCenters);
+                    location = ApplyDepthConstraint(location, ref rng, options);
                     Vector3Int cell = GridCell(location, cellSize);
                     bool intersects = false;
                     for (int dx = -1; dx <= 1 && !intersects; dx++)
@@ -137,7 +143,10 @@ namespace MiningOperation.Asteroids
                         if (!grid.TryGetValue(neighbour, out var nearby)) continue;
                         foreach (var previous in nearby)
                         {
-                            float distance = exclusionRadius + previous.nominalDiameter * 0.95f + gap;
+                            float distance = rockInfo.radius + previous.nominalDiameter * 0.95f +
+                                (options.formation == AsteroidFormationType.IceShelfContinents
+                                    ? -Mathf.Min(rockInfo.radius, previous.nominalDiameter * 0.95f) * 0.24f
+                                    : gap);
                             if ((location - previous.localPosition).sqrMagnitude < distance * distance)
                             {
                                 intersects = true;
@@ -147,17 +156,21 @@ namespace MiningOperation.Asteroids
                     }
                     if (!intersects) { accepted = true; break; }
                 }
-                // If extremely dense, skip rather than secretly intersect objects.
                 if (!accepted) continue;
-                Quaternion rotation = Quaternion.Euler(rng.Range(0f, 360f), rng.Range(0f, 360f), rng.Range(0f, 360f));
+                var localRng = new AsteroidRandom(unchecked((uint)rockInfo.asteroidSeed) ^ 0xA3C59AC3u);
+                Quaternion rotation = (options.formation == AsteroidFormationType.IceShelfFragments ||
+                    options.formation == AsteroidFormationType.IceShelfContinents)
+                    ? Quaternion.Euler(localRng.Range(-4f, 4f), localRng.Range(0f, 360f), localRng.Range(-4f, 4f))
+                    : Quaternion.Euler(localRng.Range(0f, 360f), localRng.Range(0f, 360f), localRng.Range(0f, 360f));
+                rotation = ApplyRotationConstraint(rotation, ref localRng, options);
                 var acceptedPlacement = new AsteroidFieldPlacement
                 {
-                    index = i,
-                    asteroidSeed = asteroidSeed,
-                    asteroidId = "AST-" + mixed.ToString("X16") + "-" + i.ToString("X8"),
+                    index = rockInfo.index,
+                    asteroidSeed = rockInfo.asteroidSeed,
+                    asteroidId = "AST-" + mixed.ToString("X16") + "-" + rockInfo.index.ToString("X8"),
                     localPosition = location,
                     localRotation = rotation,
-                    nominalDiameter = diameter
+                    nominalDiameter = rockInfo.diameter
                 };
                 placements.Add(acceptedPlacement);
                 Vector3Int placementCell = GridCell(location, cellSize);
@@ -167,9 +180,82 @@ namespace MiningOperation.Asteroids
                     grid.Add(placementCell, occupants);
                 }
                 occupants.Add(acceptedPlacement);
+                if (rockInfo.diameter >= MajorAnchorDiameter(options))
+                    anchors.Add(new AnchorRock { position = location, diameter = rockInfo.diameter, radius = rockInfo.radius });
             }
+            placements.Sort((a, b) => a.index.CompareTo(b.index));
             return placements;
         }
+
+        private static List<PlannedRock> BuildPlan(ulong mixed, AsteroidFieldLayoutOptions options)
+        {
+            var plan = new List<PlannedRock>(options.asteroidCount);
+            for (int i = 0; i < options.asteroidCount; i++)
+            {
+                int asteroidSeed = AsteroidIdUtility.DeriveSeed(unchecked((long)mixed), i);
+                var rockRng = new AsteroidRandom(unchecked((uint)asteroidSeed) ^ 0xA3C59AC3u);
+                float diameter = Diameter(ref rockRng, options);
+                plan.Add(new PlannedRock
+                {
+                    index = i,
+                    asteroidSeed = asteroidSeed,
+                    diameter = diameter,
+                    radius = diameter * 0.95f
+                });
+            }
+            plan.Sort((a, b) => b.diameter.CompareTo(a.diameter));
+            return plan;
+        }
+
+        private static float Diameter(ref AsteroidRandom rng, AsteroidFieldLayoutOptions o)
+        {
+            if (o.formation == AsteroidFormationType.IceShelfFragments)
+            {
+                float u = Mathf.Pow(rng.Value(), .82f);
+                return Mathf.Exp(Mathf.Lerp(Mathf.Log(o.minimumDiameter), Mathf.Log(o.maximumDiameter), u));
+            }
+            if (o.formation == AsteroidFormationType.IceShelfContinents)
+            {
+                float u = Mathf.Pow(rng.Value(), .38f);
+                return Mathf.Exp(Mathf.Lerp(Mathf.Log(o.minimumDiameter), Mathf.Log(o.maximumDiameter), u));
+            }
+            float bias = Mathf.Clamp01(o.smallAsteroidBias);
+            float smallBand = Mathf.Lerp(.58f, .84f, bias);
+            float heroBand = Mathf.Lerp(.09f, .03f, bias);
+            float pick = rng.Value();
+            float t;
+            if (pick < smallBand)
+            {
+                float u = 1f - Mathf.Pow(1f - rng.Value(), Mathf.Lerp(3.6f, 5.8f, bias));
+                t = Mathf.Lerp(0.00f, 0.34f, u);
+            }
+            else if (pick > 1f - heroBand)
+            {
+                float u = Mathf.Pow(rng.Value(), .55f);
+                t = Mathf.Lerp(0.78f, 1.00f, u);
+            }
+            else
+            {
+                float u = Mathf.Pow(rng.Value(), .82f);
+                t = Mathf.Lerp(0.34f, 0.78f, u);
+            }
+            if (rng.Value() > 0.965f)
+                t = Mathf.Lerp(t, 1f, rng.Range(.35f, .85f));
+            return Mathf.Exp(Mathf.Lerp(Mathf.Log(o.minimumDiameter), Mathf.Log(o.maximumDiameter), Mathf.Clamp01(t)));
+        }
+
+        private static bool ShouldPreferSatellite(float diameter, AsteroidFieldLayoutOptions o, int anchorCount)
+        {
+            if (anchorCount <= 0 || o.formation == AsteroidFormationType.IceShelfFragments || o.formation == AsteroidFormationType.IceShelfContinents)
+                return false;
+            return diameter <= SatelliteDiameter(o);
+        }
+
+        private static float SatelliteDiameter(AsteroidFieldLayoutOptions o)
+            => Mathf.Exp(Mathf.Lerp(Mathf.Log(o.minimumDiameter), Mathf.Log(o.maximumDiameter), 0.42f));
+
+        private static float MajorAnchorDiameter(AsteroidFieldLayoutOptions o)
+            => Mathf.Exp(Mathf.Lerp(Mathf.Log(o.minimumDiameter), Mathf.Log(o.maximumDiameter), 0.66f));
 
         private static Vector3Int GridCell(Vector3 location, float cellSize)
         {
@@ -184,12 +270,40 @@ namespace MiningOperation.Asteroids
             for (int i = 0; i < centers.Length; i++)
             {
                 float t = (i + 0.5f) / centers.Length;
-                // Spread cluster centers apart along an arc to create recognizable pockets.
                 float a = Mathf.Lerp(-Mathf.PI * 0.75f, Mathf.PI * 0.75f, t);
                 float r = s.radiusMeters * rng.Range(0.4f, 0.9f);
-                centers[i] = new Vector3(Mathf.Sin(a) * r, rng.Range(-s.thicknessMeters, s.thicknessMeters), Mathf.Cos(a) * r);
+                centers[i] = ApplyDepthConstraint(new Vector3(
+                    Mathf.Sin(a) * r,
+                    rng.Range(-s.thicknessMeters, s.thicknessMeters),
+                    Mathf.Cos(a) * r), ref rng, s);
             }
             return centers;
+        }
+
+        private static Vector3 SampleNearAnchor(ref AsteroidRandom rng, AsteroidFieldLayoutOptions s, List<AnchorRock> anchors, float radius)
+        {
+            AnchorRock host = PickAnchor(ref rng, anchors);
+            Vector3 u = rng.UnitVector();
+            if (s.depthMode != MOFieldDepthMode.Free3D) u.y *= .15f;
+            if (u.sqrMagnitude < .0001f) u = Vector3.right;
+            u.Normalize();
+            float r = host.radius + radius + rng.Range(host.radius * .18f, host.radius * .95f);
+            Vector3 jitter = new Vector3(rng.Range(-s.thicknessMeters, s.thicknessMeters), rng.Range(-s.thicknessMeters, s.thicknessMeters), rng.Range(-s.thicknessMeters, s.thicknessMeters)) * .08f;
+            if (s.depthMode != MOFieldDepthMode.Free3D) jitter.y *= .3f;
+            return host.position + u * r + jitter;
+        }
+
+        private static AnchorRock PickAnchor(ref AsteroidRandom rng, List<AnchorRock> anchors)
+        {
+            float total = 0f;
+            for (int i = 0; i < anchors.Count; i++) total += anchors[i].diameter * anchors[i].diameter;
+            float roll = rng.Value() * Mathf.Max(.0001f, total);
+            for (int i = 0; i < anchors.Count; i++)
+            {
+                roll -= anchors[i].diameter * anchors[i].diameter;
+                if (roll <= 0f) return anchors[i];
+            }
+            return anchors[anchors.Count - 1];
         }
 
         private static Vector3 SamplePosition(ref AsteroidRandom rng, AsteroidFieldLayoutOptions s, int index,
@@ -199,13 +313,30 @@ namespace MiningOperation.Asteroids
             {
                 case AsteroidFormationType.CrescentBelt:
                 {
-                    // Stratified along the arc, deliberately broken by random radial/vertical offsets.
                     float t = Mathf.Clamp01((index + 0.5f + rng.Range(-0.48f, 0.48f)) / s.asteroidCount);
                     float theta = (t - 0.5f) * s.arcDegrees * Mathf.Deg2Rad;
                     float radius = s.radiusMeters + rng.Range(-s.thicknessMeters, s.thicknessMeters);
                     return new Vector3(Mathf.Sin(theta) * radius,
                         rng.Range(-s.thicknessMeters * 0.3f, s.thicknessMeters * 0.3f),
                         Mathf.Cos(theta) * radius);
+                }
+                case AsteroidFormationType.IceShelfFragments:
+                {
+                    float x = rng.Range(-s.radiusMeters, s.radiusMeters);
+                    float z = rng.Range(-s.radiusMeters * .6f, s.radiusMeters * .6f);
+                    float y = rng.Range(-s.thicknessMeters * .12f, s.thicknessMeters * .12f);
+                    return new Vector3(x, y, z);
+                }
+                case AsteroidFormationType.IceShelfContinents:
+                {
+                    float seam = ((index % Mathf.Max(2, s.clusterCount)) - (Mathf.Max(2, s.clusterCount) - 1) * 0.5f) *
+                        (s.radiusMeters * 0.18f / Mathf.Max(1, s.clusterCount - 1));
+                    float side = ((index / Mathf.Max(2, s.clusterCount)) & 1) == 0 ? -1f : 1f;
+                    float x = Mathf.Lerp(-s.radiusMeters, s.radiusMeters, Mathf.Clamp01((index + 0.5f) / Mathf.Max(1f, s.asteroidCount)));
+                    x += rng.Range(-s.radiusMeters * .12f, s.radiusMeters * .12f);
+                    float z = seam + side * s.radiusMeters * rng.Range(.06f, .16f) + rng.Range(-s.radiusMeters * .05f, s.radiusMeters * .05f);
+                    float y = rng.Range(-s.thicknessMeters * .06f, s.thicknessMeters * .06f);
+                    return new Vector3(x, y, z);
                 }
                 case AsteroidFormationType.SphericalCloud:
                 {
@@ -222,7 +353,6 @@ namespace MiningOperation.Asteroids
                 }
                 case AsteroidFormationType.BrokenBelt:
                 {
-                    // Three populated arc sections separated by deliberately empty gaps.
                     const int sections = 3;
                     int section = index % sections;
                     float t = (index / sections + rng.Value()) / Mathf.CeilToInt(s.asteroidCount / (float)sections);
@@ -235,7 +365,6 @@ namespace MiningOperation.Asteroids
                 }
                 case AsteroidFormationType.Stream:
                 {
-                    // Elongated fragmented trail with an uneven spine and side branches.
                     float t = rng.Range(-1f, 1f);
                     float branch = rng.Value() < 0.24f ? 1f : -0.25f;
                     float x = t * s.radiusMeters;
@@ -247,7 +376,6 @@ namespace MiningOperation.Asteroids
                 }
                 case AsteroidFormationType.BrokenRing:
                 {
-                    // Four partial arcs: 360-degree ring with broad gaps between segments.
                     const int sections = 4;
                     int section = index % sections;
                     float t = (index / sections + rng.Value()) /
@@ -263,7 +391,30 @@ namespace MiningOperation.Asteroids
             }
         }
 
-        // FNV-1a over UTF-16 code units: deterministic, no string.GetHashCode randomization.
+        private static Vector3 ApplyDepthConstraint(Vector3 location, ref AsteroidRandom rng, AsteroidFieldLayoutOptions options)
+        {
+            switch (options.depthMode)
+            {
+                case MOFieldDepthMode.PlanarSlab:
+                    location.y = options.depthCenterY + Mathf.Clamp(location.y, -options.depthHalfRange, options.depthHalfRange);
+                    break;
+                case MOFieldDepthMode.Strict2DPlane:
+                    location.y = options.depthCenterY + (options.depthJitter > 0f ? rng.Range(-options.depthJitter, options.depthJitter) : 0f);
+                    break;
+            }
+            return location;
+        }
+
+        private static Quaternion ApplyRotationConstraint(Quaternion rotation, ref AsteroidRandom rng, AsteroidFieldLayoutOptions options)
+        {
+            if (!options.flattenRotationToPlane || options.depthMode == MOFieldDepthMode.Free3D)
+                return rotation;
+            Vector3 e = rotation.eulerAngles;
+            float pitch = options.depthMode == MOFieldDepthMode.Strict2DPlane ? rng.Range(-3f, 3f) : Mathf.Clamp(Mathf.DeltaAngle(0f, e.x), -12f, 12f);
+            float roll = options.depthMode == MOFieldDepthMode.Strict2DPlane ? rng.Range(-3f, 3f) : Mathf.Clamp(Mathf.DeltaAngle(0f, e.z), -12f, 12f);
+            return Quaternion.Euler(pitch, e.y, roll);
+        }
+
         private static ulong HashId(string value)
         {
             unchecked
