@@ -12,6 +12,8 @@ namespace MiningOperation.Asteroids.Tests
         [TestCase(3)]
         [TestCase(4)]
         [TestCase(5)]
+        [TestCase(6)]
+        [TestCase(7)]
         public void ExistingLayoutVersionsCanRoundTrip(int layoutVersion)
         {
             var snapshot = new AsteroidFieldSnapshot
@@ -31,8 +33,8 @@ namespace MiningOperation.Asteroids.Tests
         [Test]
         public void CurrentGeneratorAndValidatorAgreeOnVersion()
         {
-            Assert.AreEqual(5, AsteroidFieldLayout.LayoutVersion,
-                "This regression test tracks the new Y-constrained layout format.");
+            Assert.AreEqual(7, AsteroidFieldLayout.LayoutVersion,
+                "The natural belt layout updates the snapshot layout contract.");
             var snapshot = new AsteroidFieldSnapshot
             {
                 fieldId = "CURRENT-LAYOUT",

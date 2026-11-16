@@ -288,6 +288,21 @@ namespace MiningOperation.Asteroids.Editor
                         Prop(so, "maximumDiameterMeters", "Max diameter");
                     }
                     Prop(so, "smallAsteroidBias", "Small body bias");
+                    AsteroidFormationType selectedFormation = (AsteroidFormationType)so.FindProperty("formation").intValue;
+                    if (kind != MiningFieldContent.IceShelf &&
+                        (selectedFormation == AsteroidFormationType.CrescentBelt ||
+                         selectedFormation == AsteroidFormationType.BrokenBelt))
+                    {
+                        Header("Natural belt / no repeating arcs");
+                        Prop(so, "useNaturalBeltDistribution", "Natural distribution");
+                        if (so.FindProperty("useNaturalBeltDistribution").boolValue)
+                        {
+                            Prop(so, "naturalBeltIrregularity", "Belt irregularity");
+                            Prop(so, "naturalDensityContrast", "Density island contrast");
+                            Prop(so, "naturalSatelliteChance", "Satellite fraction");
+                            EditorGUILayout.HelpBox("Belt bands will have non-periodic warping, uneven widths and independently located density pockets. The layout changes only after BUILD / REBUILD.", MessageType.None);
+                        }
+                    }
                     advanced = EditorGUILayout.Foldout(advanced, "Advanced formation", true);
                     if (advanced)
                     {

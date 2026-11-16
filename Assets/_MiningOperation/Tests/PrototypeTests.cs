@@ -164,6 +164,51 @@ namespace MiningOperation.Tests
             Assert.IsTrue(game.Stations.HasModule(own,"refinery"));
             game.Validate();
         }
+        [Test]
+        public void Stations_HaveDistinctSceneIdentifiers_ForSeparateMaps()
+        {
+            var g=WorldRuntime.NewGame();
+            var st=g.State.stations.Where(x=>x.kind=="public").ToArray();
+            Assert.AreEqual(3,st.Length);
+            Assert.AreEqual(3,st.Select(x=>x.sceneId).Distinct().Count());
+        }
+        [Test]
+        public void Docking_RejectsStationFromDifferentScene()
+        {
+            var g=WorldRuntime.NewGame();var ship=g.Ships.Get(g.State.controlledShipId);
+            g.Docking.Undock(ship.id);
+            Assert.Throws<InvalidOperationException>(()=>g.Docking.RequestDock(ship.id,"station.trade"));
+            Assert.IsNull(ship.dockingTargetId);
+        }
+        [Test]
+        public void Mining_RejectsAsteroidFromAnotherSector()
+        {
+            var g=WorldRuntime.NewGame();var ship=g.Ships.Get(g.State.controlledShipId);
+            g.Docking.Undock(ship.id);
+            var a=g.State.asteroids[0];a.sceneId="sector.other";
+            Assert.Throws<InvalidOperationException>(()=>g.Mining.Extract(ship.id,a.id,5));
+        }
+        [Test]
+        public void NewStation_InheritsMainSector_NotPublicStationOwnership()
+        {
+            var g=WorldRuntime.NewGame();g.Wallets.Credit("player",200000);
+            var st=g.Stations.BuyStation("Test",false);
+            Assert.AreEqual("starter",st.sceneId);
+            Assert.AreEqual("player",st.ownerId);
+            Assert.AreNotEqual(g.Stations.Get("station.public").id,st.id);
+        }
+        [Test]
+        public void SceneIdentity_SurvivesWorldSaveAndLoad()
+        {
+            var g=WorldRuntime.NewGame();g.Stations.Get("station.public").sceneId="Assets/Scenes/02_EmptyGame.unity";
+            var filename=Path.Combine(Application.temporaryCachePath,"mo_sector_"+Guid.NewGuid().ToString("N")+".json");
+            try
+            {
+                var io=new WorldSaveService(filename);io.Save(g);
+                Assert.AreEqual("Assets/Scenes/02_EmptyGame.unity",io.Load().Stations.Get("station.public").sceneId);
+            }
+            finally{if(File.Exists(filename))File.Delete(filename);if(File.Exists(filename+".bak"))File.Delete(filename+".bak");}
+        }
     }
 }
 #endif

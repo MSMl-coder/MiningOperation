@@ -103,7 +103,7 @@ namespace MiningOperation.Asteroids.Editor
                   JsonUtility.ToJson(spawn.settings.iceGeneratorSettings.catalog)
                 : string.Empty;
             var signature = new StringBuilder(1024);
-            signature.Append("v2.6.2|layout=").Append(AsteroidFieldLayout.LayoutVersion)
+            signature.Append("v2.6.4|layout=").Append(AsteroidFieldLayout.LayoutVersion)
                 .Append("|generator=").Append(AsteroidGeneration.GeneratorVersion)
                 .Append("|id=").Append(spawn.fieldId)
                 .Append("|seed=").Append(spawn.fieldSeed)

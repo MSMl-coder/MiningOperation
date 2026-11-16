@@ -12,6 +12,7 @@ namespace MiningOperation
         public long lastEconomyCycle = -1; public long lastMatchingCycle = -1; public long lastPayrollDay = 0;
         public string playerCompanyId = "player";
         public string controlledShipId = "ship.starter";
+        public string pendingArrivalScene;
         public List<WalletState> wallets = new List<WalletState>();
         public List<InventoryState> inventories = new List<InventoryState>();
         public List<StationState> stations = new List<StationState>();
@@ -47,7 +48,7 @@ namespace MiningOperation
     [Serializable] public sealed class StationState
     {
         public string id; public string displayName; public string ownerId; public string kind = "public";
-        public string regionId; public string storageId; public double x; public double y; public double z;
+        public string regionId; public string storageId; public string sceneId; public double x; public double y; public double z;
         public int moduleSlots = 4; public double powerLimit = 20;
         public bool allowsVisitors = true; public bool allowsTrading = true; public bool allowsIndustry = true;
         public string mobilityState = "Operational"; public double travelUntil;
@@ -59,14 +60,14 @@ namespace MiningOperation
     [Serializable] public sealed class ShipState
     {
         public string id; public string displayName; public string ownerId; public string hullDefinitionId;
-        public string cargoInventoryId; public string dockedAtStationId; public string dockingTargetId;
+        public string cargoInventoryId; public string dockedAtStationId; public string dockingTargetId; public string sceneId;
         public double dockingCompleteAt; public double x; public double y; public double z;
         public int collectorCount = 3;
         public List<ShipSlotState> slots = new List<ShipSlotState>();
     }
     [Serializable] public sealed class AsteroidState
     {
-        public string id; public string displayName; public string oreItemId;
+        public string id; public string displayName; public string oreItemId; public string sceneId;
         public double remainingKg; public double x; public double y; public double z;
     }
     [Serializable] public sealed class MarketOrderState

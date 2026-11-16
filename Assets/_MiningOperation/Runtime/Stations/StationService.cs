@@ -74,10 +74,12 @@ namespace MiningOperation
         {
             const long fixedCost=180000, mobileCost=260000;
             wallets.Debit(world.playerCompanyId,mobile?mobileCost:fixedCost);
+            var ship=world.ships.FirstOrDefault(x=>x.id==world.controlledShipId);
+            var home=world.stations.FirstOrDefault(x=>x.id==ship?.dockedAtStationId);
             var s=new StationState {
                 id="station."+WorldUtil.Id(),displayName=name,ownerId=world.playerCompanyId,
-                regionId="region.alpha",kind=mobile?"mobile":"owned",moduleSlots=mobile?6:8,powerLimit=30,
-                x=mobile?180:120,y=0,z=mobile?50:150,
+                regionId="region.alpha",kind=mobile?"mobile":"owned",sceneId=ship?.sceneId??home?.sceneId,moduleSlots=mobile?6:8,powerLimit=30,
+                x=(ship?.x??home?.x??0)+(mobile?180:120),y=ship?.y??home?.y??0,z=(ship?.z??home?.z??0)+(mobile?50:150),
                 tariffs=new StationTariffs {dockingFee=0,fittingFee=0,processingFee=0,saleCommission=0.02}
             };
             world.stations.Add(s);s.storageId=inventory.Warehouse(s.ownerId,s.id).id;

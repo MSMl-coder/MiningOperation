@@ -12,6 +12,7 @@ namespace MiningOperation
         public double Extract(string shipId,string asteroidId,double requestedKg)
         {
             var s=ships.Get(shipId);var a=Get(asteroidId);
+            WorldUtil.Require(!string.IsNullOrEmpty(s.sceneId) && s.sceneId==a.sceneId,"Asteroid is in another sector");
             WorldUtil.Require(string.IsNullOrEmpty(s.dockedAtStationId)&&string.IsNullOrEmpty(s.dockingTargetId),"Cannot mine when docked/docking");
             WorldUtil.Require(s.slots.Any(sl=>sl.itemId=="module.mining_laser"),"Requires a mining laser");
             WorldUtil.Require(s.collectorCount>=3,"Requires three gravity collectors");

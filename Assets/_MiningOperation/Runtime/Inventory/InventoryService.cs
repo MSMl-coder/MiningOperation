@@ -83,7 +83,8 @@ namespace MiningOperation
         {
             foreach(var inv in world.inventories)
             {
-                WorldUtil.Require(Mass(inv.id) <= inv.capacityKg + WorldUtil.Epsilon,"Inventory overload: " + inv.id);
+                WorldUtil.Require(Mass(inv.id) <= inv.capacityKg + WorldUtil.Epsilon,
+                    "Inventory overload: " + inv.id);
                 foreach(var stock in inv.stacks)
                 {
                     WorldUtil.Require(stock.amount>0,"Non-positive stock");

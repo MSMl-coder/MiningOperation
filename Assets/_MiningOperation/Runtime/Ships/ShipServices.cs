@@ -16,7 +16,7 @@ namespace MiningOperation
             var cargo=new InventoryState {id="cargo."+id,ownerId=owner,capacityKg=240};
             world.inventories.Add(cargo);
             var ship=new ShipState {id=id,displayName=displayName,ownerId=owner,hullDefinitionId=hullId,
-                cargoInventoryId=cargo.id,dockedAtStationId=dockId,x=x,y=y,z=z};
+                cargoInventoryId=cargo.id,dockedAtStationId=dockId,x=x,y=y,z=z,sceneId=world.stations.FirstOrDefault(t=>t.id==dockId)?.sceneId};
             ship.slots.Add(new ShipSlotState {slotId="industrial.1",slotType="industrial"});
             ship.slots.Add(new ShipSlotState {slotId="industrial.2",slotType="industrial"});
             ship.slots.Add(new ShipSlotState {slotId="utility.1",slotType="utility"});
@@ -36,6 +36,7 @@ namespace MiningOperation
             var ship=ships.Get(shipId);var st=stations.Get(stationId);
             WorldUtil.Require(string.IsNullOrEmpty(ship.dockedAtStationId)&&string.IsNullOrEmpty(ship.dockingTargetId),"Ship already docking or docked");
             WorldUtil.Require(stations.CanUse(st,ship.ownerId),"Station denies access");
+            WorldUtil.Require(!string.IsNullOrEmpty(ship.sceneId) && ship.sceneId==st.sceneId,"Station is in a different scene. Travel there first.");
             WorldUtil.Require(wallets.Available(ship.ownerId)>= (st.ownerId==ship.ownerId?0:st.tariffs.dockingFee),"Docking fee cannot be paid");
             var distance=WorldUtil.Distance(ship.x,ship.y,ship.z,st.x,st.y,st.z);
             ship.dockingTargetId=stationId;
@@ -47,7 +48,7 @@ namespace MiningOperation
             WorldUtil.Require(!string.IsNullOrEmpty(ship.dockedAtStationId),"Ship is not docked");
             var st=stations.Get(ship.dockedAtStationId);
             ship.dockedAtStationId=null;ship.dockingTargetId=null;
-            ship.x=st.x+35;ship.y=st.y;ship.z=st.z+20;
+            ship.x=st.x+35;ship.y=st.y;ship.z=st.z+20;ship.sceneId=st.sceneId;
         }
         public void Tick()
         {
@@ -60,7 +61,7 @@ namespace MiningOperation
                 if(wallets.Available(s.ownerId)<fee){s.dockingTargetId=null;continue;}
                 if(fee>0)wallets.Pay(s.ownerId,st.ownerId,fee);
                 s.dockedAtStationId=st.id;s.dockingTargetId=null;
-                s.x=st.x;s.y=st.y;s.z=st.z;
+                s.x=st.x;s.y=st.y;s.z=st.z;s.sceneId=st.sceneId;
             }
         }
     }
@@ -101,7 +102,13 @@ namespace MiningOperation
             var ship=ships.Get(shipId);WorldUtil.Require(!string.IsNullOrEmpty(ship.dockedAtStationId),"Dock required");
             var slot=ship.slots.First(x=>x.slotId==slotId);
             WorldUtil.Require(!string.IsNullOrEmpty(slot.itemId),"Empty slot");
-            var wh=inventory.Warehouse(ship.ownerId,ship.dockedAtStationId).id;
+            var station=stations.Get(ship.dockedAtStationId);
+            WorldUtil.Require(stations.CanUse(station,ship.ownerId),"Fitting access denied");
+            var wh=inventory.Warehouse(ship.ownerId,station.id).id;
+            WorldUtil.Require(inventory.CanAdd(wh,slot.itemId,1),"Station warehouse is full");
+            var fee=station.ownerId==ship.ownerId?0:station.tariffs.fittingFee;
+            WorldUtil.Require(wallets.Available(ship.ownerId)>=fee,"Insufficient fitting funds");
+            if(fee>0)wallets.Pay(ship.ownerId,station.ownerId,fee);
             inventory.Add(wh,slot.itemId,1);slot.itemId=null;
         }
     }

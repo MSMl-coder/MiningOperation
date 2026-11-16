@@ -24,6 +24,9 @@ namespace MiningOperation
         private readonly string[] tabs={"Station","Storage","Market","Industry","Fitting","Fleet","Owned Base","Catalog"};
         private void Awake()
         {
+            // Legacy demo may still exist in an authored scene but be disabled by the v0.2 installer.
+            // Disabled MonoBehaviours may receive Awake: NEVER spawn demo geometry in that case.
+            if (!enabled) return;
             saves=WorldSaveService.Default();
             game=WorldRuntime.NewGame();
             sceneView=gameObject.GetComponent<PrototypeWorldView>();

@@ -32,6 +32,11 @@ namespace MiningOperation.Asteroids
         public MOFieldDepthMode depthMode;
         public float depthCenterY, depthHalfRange, depthJitter;
         public bool flattenRotationToPlane;
+        // Opt-in by serialized default for all belt Spawn Points; other formation modes ignore it.
+        public bool useNaturalBeltDistribution = true;
+        public float naturalBeltIrregularity = .82f;
+        public float naturalDensityContrast = .75f;
+        public float naturalSatelliteChance = .10f;
 
         public static AsteroidFieldLayoutOptions FromSettings(AsteroidFieldSettings s)
         {
@@ -54,7 +59,11 @@ namespace MiningOperation.Asteroids
                 depthCenterY = 0f,
                 depthHalfRange = 0f,
                 depthJitter = 0f,
-                flattenRotationToPlane = false
+                flattenRotationToPlane = false,
+                useNaturalBeltDistribution = true,
+                naturalBeltIrregularity = .82f,
+                naturalDensityContrast = .75f,
+                naturalSatelliteChance = .10f
             };
         }
         public void Validate()
@@ -72,7 +81,10 @@ namespace MiningOperation.Asteroids
                 densityPockets < 0 || densityPockets > 32 ||
                 !IsFinite(depthCenterY) || !IsFinite(depthHalfRange) || depthHalfRange < 0f ||
                 !IsFinite(depthJitter) || depthJitter < 0f ||
-                !IsFinite(pocketWidthFraction) || pocketWidthFraction < 0f || pocketWidthFraction > 0.4f)
+                !IsFinite(pocketWidthFraction) || pocketWidthFraction < 0f || pocketWidthFraction > 0.4f ||
+                !IsFinite(naturalBeltIrregularity) || naturalBeltIrregularity < 0f || naturalBeltIrregularity > 1f ||
+                !IsFinite(naturalDensityContrast) || naturalDensityContrast < 0f || naturalDensityContrast > 1f ||
+                !IsFinite(naturalSatelliteChance) || naturalSatelliteChance < 0f || naturalSatelliteChance > .35f)
                 throw new InvalidOperationException("Invalid field layout options.");
         }
         private static bool IsFinite(float f) { return !float.IsNaN(f) && !float.IsInfinity(f); }
@@ -84,7 +96,7 @@ namespace MiningOperation.Asteroids
     /// </summary>
     public static class AsteroidFieldLayout
     {
-        public const int LayoutVersion = 6;
+        public const int LayoutVersion = 7;
         private struct PlannedRock { public int index; public int asteroidSeed; public float diameter; public float radius; }
         private struct AnchorRock { public Vector3 position; public float diameter; public float radius; }
 
@@ -101,6 +113,10 @@ namespace MiningOperation.Asteroids
             if (settings == null || options == null) throw new ArgumentNullException("settings/options");
             settings.ValidateOrThrow();
             options.Validate();
+            if (options.useNaturalBeltDistribution &&
+                (options.formation == AsteroidFormationType.CrescentBelt ||
+                 options.formation == AsteroidFormationType.BrokenBelt))
+                return MONaturalBeltLayout.Plan(fieldSeed, fieldId, options);
             if (options.useComposedLayout)
                 return AsteroidFieldComposer.Plan(settings, fieldSeed, fieldId, options);
             if (string.IsNullOrWhiteSpace(fieldId) || fieldId.Length > 80)

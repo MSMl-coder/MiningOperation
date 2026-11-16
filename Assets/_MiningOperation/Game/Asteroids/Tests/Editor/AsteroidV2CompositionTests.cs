@@ -65,8 +65,21 @@ namespace MiningOperation.Asteroids.Tests
             var b = AsteroidFieldLayout.Plan(field, 12L, "STABLE", opts);
             Assert.Greater(a.Count, 10);
             Assert.Greater(b.Count, 10);
-            Assert.AreEqual(a[0].asteroidId, b[0].asteroidId);
-            Assert.AreNotEqual(a[0].localPosition, b[0].localPosition);
+            // Packing density can differ by formation: a stable ID is tied to its
+            // original index, not to its ordinal position in the accepted list.
+            var byIndex = new Dictionary<int, AsteroidFieldPlacement>();
+            foreach (var placement in b) byIndex[placement.index] = placement;
+            bool foundCommon = false, foundDifferentPosition = false;
+            foreach (var placement in a)
+            {
+                if (!byIndex.TryGetValue(placement.index, out var counterpart)) continue;
+                foundCommon = true;
+                Assert.AreEqual(placement.asteroidId, counterpart.asteroidId);
+                if (placement.localPosition != counterpart.localPosition)
+                    foundDifferentPosition = true;
+            }
+            Assert.IsTrue(foundCommon);
+            Assert.IsTrue(foundDifferentPosition);
         }
 
         [Test]

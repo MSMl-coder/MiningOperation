@@ -84,8 +84,8 @@ namespace MiningOperation.Asteroids.Tests
         [Test]
         public void VersionFiveAndOldFourRemainValidSnapshots()
         {
-            Assert.AreEqual(5, AsteroidFieldLayout.LayoutVersion);
-            foreach (int version in new[] { 4, 5 })
+            Assert.GreaterOrEqual(AsteroidFieldLayout.LayoutVersion, 7);
+            foreach (int version in new[] { 4, 5, 6, AsteroidFieldLayout.LayoutVersion })
             {
                 var snap = new AsteroidFieldSnapshot
                 {

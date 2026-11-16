@@ -75,6 +75,13 @@ namespace MiningOperation.Asteroids
         [Range(2, 32)] public int densityPockets = 10;
         [Range(0.01f, 0.4f)] public float pocketWidthFraction = 0.08f;
 
+        [Header("Natural belt distribution — Rock / Ice")]
+        [Tooltip("Replaces regularly spaced belts with a warped, irregular density-island layout.")]
+        public bool useNaturalBeltDistribution = true;
+        [Range(0f, 1f)] public float naturalBeltIrregularity = .82f;
+        [Range(0f, 1f)] public float naturalDensityContrast = .75f;
+        [Range(0f, .35f)] public float naturalSatelliteChance = .10f;
+
         [Header("2D / Y height constraint (per spawn)")]
         public MOSpawnDepthConstraints depthConstraints = new MOSpawnDepthConstraints();
 
@@ -221,6 +228,10 @@ namespace MiningOperation.Asteroids
                 inherited.depthHalfRange = depthConstraints != null ? depthConstraints.yHalfRange : 0f;
                 inherited.depthJitter = depthConstraints != null ? depthConstraints.yJitter : 0f;
                 inherited.flattenRotationToPlane = depthConstraints != null && depthConstraints.flattenRotationToPlane;
+                inherited.useNaturalBeltDistribution = useNaturalBeltDistribution;
+                inherited.naturalBeltIrregularity = naturalBeltIrregularity;
+                inherited.naturalDensityContrast = naturalDensityContrast;
+                inherited.naturalSatelliteChance = naturalSatelliteChance;
                 return inherited;
             }
             return new AsteroidFieldLayoutOptions
@@ -246,7 +257,11 @@ namespace MiningOperation.Asteroids
                 depthCenterY = depthConstraints != null ? depthConstraints.yCenter : 0f,
                 depthHalfRange = depthConstraints != null ? depthConstraints.yHalfRange : 0f,
                 depthJitter = depthConstraints != null ? depthConstraints.yJitter : 0f,
-                flattenRotationToPlane = depthConstraints != null && depthConstraints.flattenRotationToPlane
+                flattenRotationToPlane = depthConstraints != null && depthConstraints.flattenRotationToPlane,
+                useNaturalBeltDistribution = useNaturalBeltDistribution,
+                naturalBeltIrregularity = naturalBeltIrregularity,
+                naturalDensityContrast = naturalDensityContrast,
+                naturalSatelliteChance = naturalSatelliteChance
             };
         }
 
@@ -287,6 +302,9 @@ namespace MiningOperation.Asteroids
                 formation == AsteroidFormationType.IceShelfContinents;
             if (useOverrides && shelfFormation && contentType != MiningFieldContent.IceShelf)
                 contentType = MiningFieldContent.IceShelf;
+            naturalBeltIrregularity = Mathf.Clamp01(naturalBeltIrregularity);
+            naturalDensityContrast = Mathf.Clamp01(naturalDensityContrast);
+            naturalSatelliteChance = Mathf.Clamp(naturalSatelliteChance, 0f, .35f);
             shelfThicknessRatio = Mathf.Clamp(shelfThicknessRatio, .025f, .28f);
             shelfFractureStrength = Mathf.Clamp01(shelfFractureStrength);
             shelfCollisionStrength = Mathf.Clamp01(shelfCollisionStrength);
