@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: AsteroidFieldSettings
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidFieldSettings
   asteroidSettings: {fileID: 11400000, guid: 4e06ed6d4eaca41d7bf8cb0a60516f8c, type: 2}
-  asteroidMaterial: {fileID: 2100000, guid: 18dff8aba1d934c858ddc7f545ee9985, type: 2}
-  distantMaterial: {fileID: 2100000, guid: bdc7d6b7f8f94454ba3f131d5600ec21, type: 2}
+  asteroidMaterial: {fileID: 2100000, guid: 9216c477cbc82464a9d578960a1df207, type: 2}
+  distantMaterial: {fileID: 2100000, guid: 18dff8aba1d934c858ddc7f545ee9985, type: 2}
   iceMaterial: {fileID: 2100000, guid: 330c476fd6a124bab8ff1e25ab4b08d7, type: 2}
   iceGeneratorSettings: {fileID: 11400000, guid: 391cd0ce215f343088d6ba33d244906d, type: 2}
   gasParticleMaterial: {fileID: 2100000, guid: 4ea07ba627d694e5a84aaf34e26ee66f, type: 2}

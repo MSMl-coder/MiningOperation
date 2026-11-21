@@ -33,7 +33,7 @@ Material:
     - _CavityStrength: 0.42
     - _DetailStrength: 0.68
     - _FineBumpStrength: 0.36
-    - _NoiseScale: 0.045
+    - _NoiseScale: 0.429
     - _ReliefStrength: 0.18
     - _Roughness: 0.86
     - _TriplanarBlend: 0.4
