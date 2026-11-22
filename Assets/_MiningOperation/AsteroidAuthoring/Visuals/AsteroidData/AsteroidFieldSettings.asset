@@ -19,7 +19,7 @@ MonoBehaviour:
   iceGeneratorSettings: {fileID: 11400000, guid: 391cd0ce215f343088d6ba33d244906d, type: 2}
   gasParticleMaterial: {fileID: 2100000, guid: 4ea07ba627d694e5a84aaf34e26ee66f, type: 2}
   gasVolumeMaterial: {fileID: 2100000, guid: f7487c6dc896d4057a1831c46d76885c, type: 2}
-  allowExperimentalRockShaders: 0
+  allowExperimentalRockShaders: 1
   fastStreamedAsteroids: 1
   streamedMeshSubdivisions: 3
   cachedStreamedAsteroids: 12

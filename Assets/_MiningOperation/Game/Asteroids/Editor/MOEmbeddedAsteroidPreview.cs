@@ -129,14 +129,26 @@ namespace MiningOperation.Asteroids.Editor
                         geometryProfile = shape
                     }, generator, 3);
                 }
-                Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-                if (shader == null) return;
                 Material source = materialOverride != null ? materialOverride :
+                    settings.unifiedAsteroidMaterial != null ? settings.unifiedAsteroidMaterial :
                     ice ? settings.iceMaterial : settings.asteroidMaterial;
+                Shader shader = source != null && source.shader != null && source.shader.isSupported ? source.shader :
+                    Shader.Find("Universal Render Pipeline/Lit");
+                if (shader == null) return;
                 material = source != null && source.shader == shader ? new Material(source) : new Material(shader);
-                material.SetColor("_BaseColor", ice ? new Color(.78f,.91f,1f) : new Color(.76f,.73f,.68f));
-                if (!ice && settings.rockAlbedoTexture != null)
-                    material.SetTexture("_BaseMap", settings.rockAlbedoTexture);
+                if (AsteroidStableMaterials.IsUnified(material))
+                {
+                    material.SetFloat("_IceBlend", ice ? 1f : 0f);
+                    material.SetFloat("_MO_ObjectRadius", .9f); // preview geometry diameter = 1.8m
+                    material.SetFloat("_MO_SurfaceSeed", (unchecked((uint)seed) & 65535u) / 65535f);
+                    material.SetFloat("_MO_LODVisibility", 1f);
+                }
+                else
+                {
+                    material.SetColor("_BaseColor", ice ? new Color(.78f,.91f,1f) : new Color(.76f,.73f,.68f));
+                    if (!ice && settings.rockAlbedoTexture != null)
+                        material.SetTexture("_BaseMap", settings.rockAlbedoTexture);
+                }
             }
             catch (System.Exception e) { Debug.LogWarning("[MO] Preview generation: " + e.Message); }
         }

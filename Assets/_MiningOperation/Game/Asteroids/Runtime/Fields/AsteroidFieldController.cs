@@ -35,8 +35,9 @@ namespace MiningOperation.Asteroids
             if (ActiveSettings == null) return null;
             if (runtimeNearMaterial == null)
                 runtimeNearMaterial = AsteroidStableMaterials.Create(
-                    snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && ActiveSettings.iceMaterial != null
-                        ? ActiveSettings.iceMaterial : ActiveSettings.asteroidMaterial,
+                    ActiveSettings.unifiedAsteroidMaterial != null ? ActiveSettings.unifiedAsteroidMaterial :
+                    (snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && ActiveSettings.iceMaterial != null
+                        ? ActiveSettings.iceMaterial : ActiveSettings.asteroidMaterial),
                     ActiveSettings.allowExperimentalRockShaders,
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf)
                         ? new Color(.78f, .90f, 1f, 1f) : new Color(.87f, .85f, .81f, 1f),
@@ -44,6 +45,9 @@ namespace MiningOperation.Asteroids
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockAlbedoTexture,
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockNormalTexture,
                     ActiveSettings.rockNormalStrength);
+            if (AsteroidStableMaterials.IsUnified(runtimeNearMaterial))
+                runtimeNearMaterial.SetFloat("_IceBlend", snapshot != null &&
+                    (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? 1f : 0f);
             return runtimeNearMaterial;
         }
 
@@ -159,7 +163,21 @@ namespace MiningOperation.Asteroids
                         snapshot.simulationSeconds, ActiveSettings.rotationSpeedMultiplier * ActiveSettings.mineableRotationMultiplier);
                 }
             }
-            farRenderer?.Render(snapshot.simulationSeconds);
+            // Dither near/far handoff only when both renderers use the unified shader.
+            if (AsteroidStableMaterials.IsUnified(runtimeNearMaterial) && farRenderer != null && farRenderer.Ready)
+            {
+                Vector3 eye = viewer != null ? viewer.position : (Camera.main != null ? Camera.main.transform.position : transform.position);
+                float range = Mathf.Min(ActiveSettings.spawnDistanceMeters, ActiveSettings.detailedDistanceMeters);
+                foreach (var pair in active)
+                {
+                    if (pair.Value == null) continue;
+                    float distance = Vector3.Distance(pair.Value.transform.position, eye);
+                    float fade = Mathf.Clamp01((range - distance) / Mathf.Max(35f, range * .15f));
+                    pair.Value.SetUnifiedSurfaceProperties(fade);
+                }
+            }
+            farRenderer?.Render(snapshot.simulationSeconds, viewer != null ? viewer.position :
+                (Camera.main != null ? Camera.main.transform.position : transform.position));
             debrisRenderer?.Render();
         }
 
@@ -187,12 +205,22 @@ namespace MiningOperation.Asteroids
             debrisRenderer = null;
             if (!Application.isPlaying || !runtimeStreaming || snapshot == null ||
                 ActiveSettings == null || !ActiveSettings.useGpuFarField) return;
-            farRenderer = new AsteroidFieldFarRenderer(transform, ActiveSettings);
+            if (ActiveSettings.asteroidSettings == null)
+            {
+                Debug.LogError("[MO] Field '" + fieldId +
+                    "' has a saved snapshot but the Field Settings asset '" + ActiveSettings.name +
+                    "' is missing its Asteroid Settings reference. Near/far rendering and debris " +
+                    "cannot be restored until this reference is assigned in Edit Mode. " +
+                    "Do not Rebuild or delete the snapshot.", this);
+                return;
+            }
+            Material sharedSurface = GetRuntimeNearMaterial();
+            farRenderer = new AsteroidFieldFarRenderer(transform, ActiveSettings, sharedSurface);
             farRenderer.Initialize(snapshot);
             if (ActiveSettings.enableDecorativeDebris &&
                 ActiveSettings.decorativeRockCount + ActiveSettings.microFragmentCount > 0)
             {
-                debrisRenderer = new AsteroidDebrisRenderer(transform, ActiveSettings);
+                debrisRenderer = new AsteroidDebrisRenderer(transform, ActiveSettings, sharedSurface);
                 debrisRenderer.Initialize(snapshot);
             }
             nextStreamingTick = 0f;
@@ -459,6 +487,7 @@ namespace MiningOperation.Asteroids
                 cached.transform.localRotation = record.localRotation;
                 cached.SynchronizeMass(record.asteroid);
                 cached.gameObject.SetActive(true);
+                cached.SetUnifiedSurfaceProperties(1f);
                 active[record.index] = cached;
                 return cached;
             }
@@ -500,6 +529,7 @@ namespace MiningOperation.Asteroids
                     asteroid.RestoreStreamed(record.asteroid, ActiveSettings.streamedMeshSubdivisions);
                 else
                     asteroid.Restore(record.asteroid);
+                asteroid.SetUnifiedSurfaceProperties(1f);
                 active[record.index] = asteroid;
                 return asteroid;
             }

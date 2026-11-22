@@ -73,7 +73,7 @@ namespace MiningOperation.Asteroids
                     data.geometryProfile, subdivisions, visualColors);
             if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4 && data.generatorVersion != 5 && data.generatorVersion != 8) || data.geometryProfile == null)
                 throw new InvalidOperationException("Unsupported asteroid geometry version or missing shape profile.");
-            // V8: more distinct silhouette families with a cleaner retro-readability target.
+            // V8: more distinct silhouette families with a cleaner silhouette target.
             // Versions 1..5 follow their exact legacy recipes for save compatibility.
             AsteroidGeometryProfile working = data.geometryProfile;
             if (data.generatorVersion == 5)

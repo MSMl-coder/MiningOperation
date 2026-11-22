@@ -20,6 +20,8 @@ namespace MiningOperation.Asteroids
     {
         [Header("Asteroids")]
         public AsteroidGeneratorSettings asteroidSettings;
+        [Tooltip("One authored material shared by near, far, and debris. Can represent both rock and ice using a single shader.")]
+        public Material unifiedAsteroidMaterial;
         public Material asteroidMaterial;
         [Tooltip("Optional lightweight material for GPU-instanced distant rocks.")]
         public Material distantMaterial;

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace MiningOperation.Asteroids
 {
@@ -51,6 +52,7 @@ namespace MiningOperation.Asteroids
             if (renderer == null) renderer = gameObject.AddComponent<MeshRenderer>();
             meshFilter.sharedMesh = borrowedMesh;
             if (surfaceMaterial != null) renderer.sharedMaterial = surfaceMaterial;
+            SetConsistentShadowCasting(renderer);
             LODGroup group = GetComponent<LODGroup>();
             if (group != null) group.enabled = false;
             MeshCollider collider = GetComponent<MeshCollider>();
@@ -61,6 +63,34 @@ namespace MiningOperation.Asteroids
                 collider.enabled = true;
             }
             else if (collider != null) collider.sharedMesh = null;
+        }
+
+        private MaterialPropertyBlock unifiedSurfaceBlock;
+        /// <summary>Per-asteroid radius and fade without material instance duplication.
+        /// Applies to streamed meshes and every child LOD renderer.</summary>
+        public void SetUnifiedSurfaceProperties(float visibility)
+        {
+            if (!AsteroidStableMaterials.IsUnified(surfaceMaterial) || data == null) return;
+            if (unifiedSurfaceBlock == null) unifiedSurfaceBlock = new MaterialPropertyBlock();
+            unifiedSurfaceBlock.SetFloat("_MO_ObjectRadius", Mathf.Max(.001f, data.diameterMeters * .5f));
+            unifiedSurfaceBlock.SetFloat("_MO_SurfaceSeed", (unchecked((uint)data.seed) & 65535u) / 65535f);
+            unifiedSurfaceBlock.SetFloat("_MO_LODVisibility", Mathf.Clamp01(visibility));
+            var renderers = GetComponentsInChildren<MeshRenderer>(true);
+            foreach (var renderer in renderers)
+            {
+                if (renderer == null) continue;
+                renderer.SetPropertyBlock(unifiedSurfaceBlock);
+                SetConsistentShadowCasting(renderer);
+            }
+        }
+
+        private void SetConsistentShadowCasting(MeshRenderer renderer)
+        {
+            if (renderer == null || !AsteroidStableMaterials.IsUnified(surfaceMaterial)) return;
+            // The far GPU path never casts dynamic shadows. During dither LOD crossfade
+            // an opaque near ShadowCaster would otherwise darken the far representation.
+            if (renderer.shadowCastingMode != ShadowCastingMode.Off)
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
         }
 
         public int StreamedSubdivisionLevel => runtimeSingleMesh ? runtimeMeshLevel : -1;
@@ -181,6 +211,7 @@ namespace MiningOperation.Asteroids
                 meshFilter.sharedMesh = compact;
                 ownedMeshes.Add(compact);
                 if (surfaceMaterial != null) compactRenderer.sharedMaterial = surfaceMaterial;
+                SetConsistentShadowCasting(compactRenderer);
                 LODGroup group = GetComponent<LODGroup>();
                 if (group != null) group.enabled = false;
                 MeshCollider compactCollider = GetComponent<MeshCollider>();
@@ -250,6 +281,7 @@ namespace MiningOperation.Asteroids
                     targetRenderer = child.AddComponent<MeshRenderer>();
                     targetRenderer.sharedMaterials = primary.sharedMaterials;
                 }
+                SetConsistentShadowCasting(targetRenderer);
                 levels[i] = new LOD(cutoffs[i], new[] { targetRenderer });
             }
             ownedMeshes.AddRange(generated);

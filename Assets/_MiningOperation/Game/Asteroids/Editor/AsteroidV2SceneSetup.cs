@@ -2,7 +2,6 @@ using System;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace MiningOperation.Asteroids.Editor
@@ -35,6 +34,8 @@ namespace MiningOperation.Asteroids.Editor
             {
                 if (gradientMaterial == null)
                 {
+                    if (System.IO.File.Exists(Folder + "/MO_SpaceGradient.mat"))
+                        throw new InvalidOperationException("Existing sky material could not be loaded. Repair it; do not overwrite it.");
                     gradientMaterial = new Material(gradientShader);
                     AssetDatabase.CreateAsset(gradientMaterial, Folder + "/MO_SpaceGradient.mat");
                 }
@@ -82,84 +83,6 @@ namespace MiningOperation.Asteroids.Editor
             Debug.Log("[MO] Repaired sky, one key + one fill light, planet disabled, legacy auto visuals cleaned. No asteroid snapshot changed.");
         }
 
-        public static void InstallRetroEnvironment()
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                EditorUtility.DisplayDialog("Edit Mode required", "Leave Play Mode before applying the retro space setup.", "OK");
-                return;
-            }
-            EnsureFolder();
-            AsteroidEnvironmentProfile profile = LoadOrCreate<AsteroidEnvironmentProfile>(Folder + "/MO_SpaceEnvironment.asset");
-            Undo.RecordObject(profile, "Apply retro Mining Operation space profile");
-            profile.upperColor = new Color(0.13f, 0.29f, 0.42f);
-            profile.horizonColor = new Color(0.36f, 0.53f, 0.56f);
-            profile.lowerColor = new Color(0.18f, 0.34f, 0.43f);
-            profile.nebulaStrength = 0.035f;
-            profile.starStrength = 0.065f;
-            profile.keyColor = new Color(1f, 0.97f, 0.89f);
-            profile.keyIntensity = 1.85f;
-            profile.fillColor = new Color(0.54f, 0.70f, 0.82f);
-            profile.fillIntensity = 0.62f;
-            profile.ambientColor = new Color(0.40f, 0.46f, 0.50f);
-            profile.keyDirectionEuler = new Vector3(32f, -48f, 0f);
-            profile.hazeColor = new Color(0.35f, 0.49f, 0.54f);
-            profile.hazeStartMeters = 3800f;
-            profile.hazeEndMeters = 22000f;
-            profile.hazeStrength = 0.09f;
-            profile.showPlanet = false;
-
-            var gradientShader = Shader.Find("Mining Operation/Space Gradient Sky");
-            Material gradientMaterial = AssetDatabase.LoadAssetAtPath<Material>(Folder + "/MO_SpaceGradient.mat");
-            if (gradientShader != null && gradientShader.isSupported)
-            {
-                if (gradientMaterial == null)
-                {
-                    gradientMaterial = new Material(gradientShader);
-                    AssetDatabase.CreateAsset(gradientMaterial, Folder + "/MO_SpaceGradient.mat");
-                }
-                else
-                {
-                    Undo.RecordObject(gradientMaterial, "Repair gradient shader");
-                    gradientMaterial.shader = gradientShader;
-                }
-                profile.gradientSkyMaterial = gradientMaterial;
-                EditorUtility.SetDirty(gradientMaterial);
-            }
-            else profile.gradientSkyMaterial = null;
-            EditorUtility.SetDirty(profile);
-
-            var env = UnityEngine.Object.FindFirstObjectByType<AsteroidSpaceEnvironment>(FindObjectsInactive.Include);
-            if (env == null)
-            {
-                var go = new GameObject("MO Space Environment V2");
-                Undo.RegisterCreatedObjectUndo(go, "Add Mining retro environment");
-                env = Undo.AddComponent<AsteroidSpaceEnvironment>(go);
-            }
-            Undo.RecordObject(env, "Apply retro Mining environment");
-            env.profile = profile;
-            env.keyLight = GetOrCreateLight("MO V2 Sun (Key)");
-            env.fillLight = GetOrCreateLight("MO V2 Ambient Fill");
-            env.distantPlanet = null;
-            if (!env.gameObject.activeSelf)
-            {
-                Undo.RecordObject(env.gameObject, "Activate retro space environment");
-                env.gameObject.SetActive(true);
-            }
-            if (!env.enabled)
-            {
-                Undo.RecordObject(env, "Enable retro space environment");
-                env.enabled = true;
-            }
-            RemoveOldVisuals(env.gameObject);
-            env.Apply();
-            ApplyCameraSettings(profile);
-            RenderSettings.fog = false;
-            AssetDatabase.SaveAssets();
-            EditorSceneManager.MarkSceneDirty(env.gameObject.scene);
-            Debug.Log("[MO] Bright retro sky and clean key/fill lighting applied to the gameplay camera. No asteroid snapshot changed.");
-        }
-
         private static void ApplyCameraSettings(AsteroidEnvironmentProfile profile)
         {
             Camera camera = Camera.main;
@@ -184,10 +107,10 @@ namespace MiningOperation.Asteroids.Editor
             }
             if (camera == null)
             {
-                Debug.LogWarning("[MO] No active Base gameplay camera. Retro sky profile is installed, but a Game camera must clear to Skybox to display it.");
+                Debug.LogWarning("[MO] No active Base gameplay camera. The sky profile is installed, but a Game camera must clear to Skybox to display it.");
                 return;
             }
-            Undo.RecordObject(camera, "Apply retro space camera clear");
+            Undo.RecordObject(camera, "Apply space camera clear");
             camera.clearFlags = profile.gradientSkyMaterial != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
             camera.backgroundColor = profile.lowerColor;
             camera.farClipPlane = Mathf.Max(camera.farClipPlane, 40000f);
@@ -196,9 +119,7 @@ namespace MiningOperation.Asteroids.Editor
             {
                 if (cameraData.renderType == CameraRenderType.Overlay)
                     Debug.LogWarning("[MO] The MainCamera is an URP Overlay camera. Background skybox is drawn by the Base camera; change that Base camera's clear mode.");
-                Undo.RecordObject(cameraData, "Disable legacy post processing for retro field");
-                cameraData.renderPostProcessing = false;
-                EditorUtility.SetDirty(cameraData);
+                // Do not override post-processing; the owning game camera controls it.
             }
             EditorUtility.SetDirty(camera);
         }
@@ -208,17 +129,11 @@ namespace MiningOperation.Asteroids.Editor
         private static void RemoveOldVisuals(GameObject environmentToKeep)
         {
             Transform[] all = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            string[] deleted = { "MO Distant Planet (background)" };
-            string[] disabled = { "MO_PrototypeLighting", "MO_KeyLight", "MO_KeyLight (1)",
+            string[] disabled = { "MO Distant Planet (background)", "MO_PrototypeLighting", "MO_KeyLight", "MO_KeyLight (1)",
                 "MO_GlobalVolume", "MO V2 Color Grading", "MO V2 Color Grading (1)" };
             foreach (Transform t in all)
             {
                 if (t == null || t.gameObject == environmentToKeep) continue;
-                if (Array.IndexOf(deleted, t.gameObject.name) >= 0)
-                {
-                    Undo.DestroyObjectImmediate(t.gameObject);
-                    continue;
-                }
                 if (Array.IndexOf(disabled, t.gameObject.name) >= 0 && t.gameObject.activeSelf)
                 {
                     Undo.RecordObject(t.gameObject, "Disable obsolete Mining visuals");
@@ -243,106 +158,6 @@ namespace MiningOperation.Asteroids.Editor
             return Undo.AddComponent<Light>(go);
         }
 
-        public static void ApplyStableRuntimePreset(AsteroidFieldSpawnPoint anchor)
-        {
-            if (anchor == null || anchor.settings == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
-            if (!EditorUtility.DisplayDialog("Stable Asteroid Rendering v2.1.1",
-                "Apply to this SHARED Field Settings asset? Forces standard URP/Lit near/far/debris materials, " +
-                "creates ONE near mesh per asteroid and caches 12 recently visited rocks. " +
-                "This does NOT regenerate the belt or change resource data. Experimental triplanar graphics are " +
-                "temporarily disabled until validated.", "Apply stable preset", "Cancel")) return;
-            var s = anchor.settings;
-            Undo.RecordObject(s, "MO stable streaming and rock materials");
-            s.allowExperimentalRockShaders = false;
-            s.fastStreamedAsteroids = true;
-            s.streamedMeshSubdivisions = 3;
-            s.cachedStreamedAsteroids = 12;
-            s.instantiatePerFrame = 1;
-            s.meshColliders = false; // selection uses persistent asteroid bounds
-            s.useGpuFarField = true;
-            EditorUtility.SetDirty(s);
-            AssetDatabase.SaveAssets();
-            Debug.Log("[MO] Stable materials + one-mesh near streaming enabled; no asteroid snapshots changed. Re-enter Play Mode.");
-        }
-
-        public static void ApplyBalancedPreset(AsteroidFieldSpawnPoint anchor)
-        {
-            if (anchor == null || anchor.settings == null) return;
-            if (!EditorUtility.DisplayDialog("Balanced belt performance preset",
-                "Update the SHARED Field Settings asset? Other Spawn Points using this asset will also change. " +
-                "Existing generated asteroid records and mining state remain untouched.", "Apply", "Cancel")) return;
-            AsteroidFieldSettings s = anchor.settings;
-            Undo.RecordObject(s, "Balanced Mining field visuals");
-            s.useGpuFarField = true;
-            s.enableDecorativeDebris = true;
-            s.decorativeRockCount = 1600;
-            s.microFragmentCount = 0; // costly and visually low value at present
-            s.debrisMeshVariants = 8;
-            s.debrisDrawDistance = 9000f;
-            s.distantMeshVariants = 12;
-            s.distantSubdivisions = 1;
-            s.maxDetailedAsteroids = 24;
-            s.maxActiveAsteroids = Mathf.Max(s.maxActiveAsteroids, 24);
-            s.detailedDistanceMeters = 2200f;
-            s.instantiatePerFrame = 2;
-            s.streamingTickSeconds = 0.25f;
-            EditorUtility.SetDirty(s);
-            AssetDatabase.SaveAssets();
-            Debug.Log("[MO] Balanced GPU/debris preset applied. No field regeneration. Re-enter Play Mode to recreate visual buffers.");
-        }
-
-        // Kept callable by other tools. Frames an actual asteroid (not a guessed point on an arc).
-        public static void FrameBelt()
-        {
-            var anchor = Selection.activeGameObject != null
-                ? Selection.activeGameObject.GetComponent<AsteroidFieldSpawnPoint>() : null;
-            if (anchor == null) anchor = UnityEngine.Object.FindFirstObjectByType<AsteroidFieldSpawnPoint>();
-            if (anchor == null) return;
-            Camera cam = Camera.main;
-            if (cam == null) cam = UnityEngine.Object.FindFirstObjectByType<Camera>();
-            if (cam == null) { Debug.LogWarning("[MO] No game camera to frame."); return; }
-            var snapshot = anchor.Controller != null ? anchor.Controller.Snapshot : null;
-            if (snapshot == null || snapshot.asteroids == null || snapshot.asteroids.Count == 0)
-            {
-                Debug.LogWarning("[MO] Build a field first, then frame a real asteroid.");
-                return;
-            }
-            var entry = snapshot.asteroids[snapshot.asteroids.Count / 2];
-            if (entry == null || entry.asteroid == null) return;
-            Vector3 world = anchor.transform.TransformPoint(entry.localPosition);
-            float distance = Mathf.Max(140f, entry.asteroid.diameterMeters * 1.6f);
-            Undo.RecordObject(cam.transform, "Frame actual asteroid");
-            cam.transform.position = world + anchor.transform.TransformDirection(new Vector3(0.45f, 0.28f, -1f)).normalized * distance;
-            cam.transform.LookAt(world);
-            EditorUtility.SetDirty(cam.transform);
-            if (anchor.Controller != null)
-            {
-                Undo.RecordObject(anchor.Controller, "Use test camera for asteroid streaming");
-                anchor.Controller.Viewer = cam.transform;
-                EditorUtility.SetDirty(anchor.Controller);
-            }
-            EditorSceneManager.MarkSceneDirty(cam.gameObject.scene);
-        }
-
-        public static void UpgradeRockMaterials() => AsteroidRockTextureGenerator.UpgradeAll();
-
-        public static void RemoveObsoleteEditorTools()
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            if (!EditorUtility.DisplayDialog("Remove obsolete tools?",
-                "Remove only old test-scene and global LOD preset scripts. Their functions now live in Field Studio. " +
-                "Scene objects, snapshots, resources and active authoring scripts will NOT be deleted.",
-                "Remove 2 scripts", "Cancel")) return;
-            string baseFolder = "Assets/_MiningOperation/Game/Asteroids/Editor/";
-            string[] names = { "AsteroidTestEnvironmentSetup.cs", "AsteroidGraphicsPreset.cs" };
-            int removed = 0;
-            foreach (var name in names)
-                if (AssetDatabase.LoadAssetAtPath<MonoScript>(baseFolder + name) != null &&
-                    AssetDatabase.DeleteAsset(baseFolder + name)) removed++;
-            AssetDatabase.Refresh();
-            Debug.Log("[MO] Removed " + removed + " obsolete editor scripts. Active authoring workflows kept.");
-        }
-
         private static void EnsureFolder()
         {
             if (!AssetDatabase.IsValidFolder("Assets/_MiningOperation"))
@@ -354,6 +169,9 @@ namespace MiningOperation.Asteroids.Editor
         {
             T asset = AssetDatabase.LoadAssetAtPath<T>(path);
             if (asset != null) return asset;
+            if (System.IO.File.Exists(path))
+                throw new InvalidOperationException("Cannot load existing environment asset " + path +
+                    ". Repair its script instead of creating a replacement.");
             asset = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(asset, path);
             return asset;

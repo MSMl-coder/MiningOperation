@@ -25,11 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _NebulaIntensity: 0.24
-    - _StarIntensity: 0.12
+    - _NebulaIntensity: 0.149
+    - _StarIntensity: 1
     m_Colors:
-    - _SkyBottom: {r: 0.054999977, g: 0.13999996, b: 0.23999995, a: 1}
-    - _SkyMiddle: {r: 0.23999995, g: 0.38999996, b: 0.43999997, a: 1}
+    - _SkyBottom: {r: 0.007843138, g: 0.050980393, b: 0.08627451, a: 1}
+    - _SkyMiddle: {r: 0.2253471, g: 0.2261481, b: 0.2264151, a: 1}
     - _SkyTop: {r: 0.02, g: 0.06999998, b: 0.13999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

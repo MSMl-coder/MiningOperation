@@ -147,7 +147,6 @@ namespace MiningOperation.Asteroids
                     contentType == MiningFieldContent.Ice || contentType == MiningFieldContent.IceShelf
                         ? iceGeology : rockGeology;
                 var resolved = source != null ? source.Clone() : new MOSpawnGeology();
-                visuals?.ApplyArtDirection(contentType, resolved);
                 return resolved;
             }
         }
@@ -172,7 +171,6 @@ namespace MiningOperation.Asteroids
                     rockGenerator = Instantiate(settings.asteroidSettings);
                     rockGenerator.hideFlags = HideFlags.DontSave;
                     var rockShape = rockGeology != null ? rockGeology.Clone() : new MOSpawnGeology();
-                    visuals?.ApplyArtDirection(MiningFieldContent.Rock, rockShape);
                     rockShape.ApplyTo(rockGenerator);
                     resolved.asteroidSettings = rockGenerator;
                 }
@@ -181,7 +179,6 @@ namespace MiningOperation.Asteroids
                     iceGenerator = Instantiate(settings.iceGeneratorSettings);
                     iceGenerator.hideFlags = HideFlags.DontSave;
                     var iceShape = iceGeology != null ? iceGeology.Clone() : new MOSpawnGeology();
-                    visuals?.ApplyArtDirection(contentType == MiningFieldContent.IceShelf ? MiningFieldContent.IceShelf : MiningFieldContent.Ice, iceShape);
                     iceShape.ApplyTo(iceGenerator);
                     resolved.iceGeneratorSettings = iceGenerator;
                 }
@@ -313,9 +310,6 @@ namespace MiningOperation.Asteroids
             if (depthConstraints == null) depthConstraints = new MOSpawnDepthConstraints();
             depthConstraints.ClampValues();
             if (visuals == null) visuals = new MOSpawnVisuals();
-            visuals.retroNoiseSuppression = Mathf.Clamp01(visuals.retroNoiseSuppression);
-            visuals.retroCraterReadability = Mathf.Clamp01(visuals.retroCraterReadability);
-            visuals.retroSilhouetteStrength = Mathf.Clamp01(visuals.retroSilhouetteStrength);
             gasCloudCount = Mathf.Clamp(gasCloudCount, 1, 20);
             gasPuffsPerCloud = Mathf.Clamp(gasPuffsPerCloud, 24, 200);
             gasCloudRadiusMeters = Mathf.Max(50f, gasCloudRadiusMeters);

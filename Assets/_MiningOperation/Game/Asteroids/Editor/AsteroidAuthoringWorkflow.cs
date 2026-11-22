@@ -60,16 +60,17 @@ namespace MiningOperation.Asteroids.Editor
             {
                 spawn.settings.ValidateOrThrow();
                 AsteroidCompositionGenerator.ValidateCatalog(spawn.settings.asteroidSettings.catalog);
+                var layout = spawn.BuildOptions(spawn.settings);
                 if (spawn.contentType == MiningFieldContent.Ice || spawn.contentType == MiningFieldContent.IceShelf ||
-                    spawn.BuildOptions(spawn.settings).formation == AsteroidFormationType.IceShelfFragments ||
-                    spawn.BuildOptions(spawn.settings).formation == AsteroidFormationType.IceShelfContinents)
+                    layout.formation == AsteroidFormationType.IceShelfFragments ||
+                    layout.formation == AsteroidFormationType.IceShelfContinents)
                 {
                     if (spawn.settings.iceGeneratorSettings == null ||
                         spawn.settings.iceGeneratorSettings.catalog == null)
-                        return "Ice settings missing. Open VISUALS > Install / Repair Ice & Gas Materials.";
+                        return "Ice generator/catalog is missing. Repair existing assets before building.";
                     AsteroidCompositionGenerator.ValidateCatalog(spawn.settings.iceGeneratorSettings.catalog);
                 }
-                spawn.BuildOptions(spawn.settings).Validate();
+                layout.Validate();
             }
             catch (Exception e) { return e.Message; }
             return null;
@@ -153,12 +154,6 @@ namespace MiningOperation.Asteroids.Editor
                 signature.Append('|').Append(spawn.iceGeology.minCraters).Append(',')
                     .Append(spawn.iceGeology.maxCraters);
             }
-            if (spawn.visuals != null && spawn.visuals.artDirection != MOArtDirection.Default)
-            {
-                signature.Append("|artDirection=").Append(spawn.visuals.artDirection);
-                Append(signature, spawn.visuals.retroNoiseSuppression,
-                    spawn.visuals.retroCraterReadability, spawn.visuals.retroSilhouetteStrength);
-            }
             string source = signature.ToString();
             unchecked
             {
@@ -193,26 +188,59 @@ namespace MiningOperation.Asteroids.Editor
                 !string.Equals(spawn.LastBuildSignature, Signature(spawn), StringComparison.Ordinal);
         }
 
-        public static AsteroidFieldSettings CreateReadyAssets()
+        /// <summary>Looks on disk, not by loaded type alone: assets with missing m_Script
+        /// are still real files and must not be overwritten by a new ready setup.</summary>
+        public static bool FindExistingSettingsAssets(out string description)
+        {
+            description = string.Empty;
+            string absoluteFolder = System.IO.Path.Combine(Application.dataPath, "_MiningOperation");
+            if (!System.IO.Directory.Exists(absoluteFolder)) return false;
+            var found = new System.Collections.Generic.List<string>();
+            foreach (string file in System.IO.Directory.GetFiles(absoluteFolder, "*.asset",
+                System.IO.SearchOption.AllDirectories))
+            {
+                string name = System.IO.Path.GetFileNameWithoutExtension(file);
+                bool isSettings = name.IndexOf("Generator", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.IndexOf("ResourceCatalog", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    name.StartsWith("AsteroidField", StringComparison.OrdinalIgnoreCase) ||
+                    name.EndsWith("_FieldSettings", StringComparison.OrdinalIgnoreCase) ||
+                    name.IndexOf("_FieldSettings_", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (isSettings) found.Add(name);
+            }
+            if (found.Count == 0) return false;
+            description = string.Join(", ", found.ToArray());
+            return true;
+        }
+
+        public static AsteroidFieldSettings CreateReadyAssets(MiningFieldContent type = MiningFieldContent.Rock)
         {
             EnsureFolder();
+            string prefix = "MO_" + type + (type == MiningFieldContent.IceShelf ? "_IceShelfContinents" :
+                type == MiningFieldContent.Gas ? "_Cloud" : "_CrescentBelt");
+            // Do not create a second set of assets while existing (possibly broken)
+            // ScriptableObjects still exist on disk. Repair their GUID links instead.
+            if (FindExistingSettingsAssets(out string description))
+                throw new InvalidOperationException("Existing generator configuration assets found: " +
+                    description + ". Creation was cancelled to avoid duplicates. " +
+                    "Repair the existing settings scripts/links and reuse those assets.");
             var catalog = ScriptableObject.CreateInstance<AsteroidResourceCatalog>();
             var defaults = AsteroidResourceCatalog.CreateDefaultRuntime();
             catalog.resources = defaults.resources;
             UnityEngine.Object.DestroyImmediate(defaults);
             AssetDatabase.CreateAsset(catalog,
-                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/ResourceCatalog.asset"));
+                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/" + prefix + "_ResourceCatalog.asset"));
 
             var generator = ScriptableObject.CreateInstance<AsteroidGeneratorSettings>();
             generator.catalog = catalog;
             AssetDatabase.CreateAsset(generator,
-                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/AsteroidGenerator.asset"));
+                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/" + prefix + "_GeneratorSettings.asset"));
 
             var field = ScriptableObject.CreateInstance<AsteroidFieldSettings>();
             field.asteroidSettings = generator;
             // New V2 fields start as coherent, visually dense belts. Old field assets
             // are never touched by this constructor.
             field.useComposedLayout = true;
+            if (type == MiningFieldContent.IceShelf) field.formation = AsteroidFormationType.IceShelfContinents;
             field.asteroidCount = 320;
             field.radiusMeters = 3800f;
             field.thicknessMeters = 850f;
@@ -227,25 +255,12 @@ namespace MiningOperation.Asteroids.Editor
             field.debrisSpreadMeters = 280f;
             field.debrisDrawDistance = 9000f;
             field.distantDrawDistanceMeters = 23000f;
-            field.asteroidMaterial = CreateOptionalMaterial("AsteroidRock.mat", "Universal Render Pipeline/Lit");
-            field.distantMaterial = CreateOptionalMaterial("AsteroidFar.mat", "Universal Render Pipeline/Lit");
+            // A single authorable surface is used by near, far and decorative objects.
             AssetDatabase.CreateAsset(field,
-                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/AsteroidField.asset"));
-            AsteroidRockTextureGenerator.Install(field);
+                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/" + prefix + "_FieldSettings.asset"));
+            MOUnifiedAsteroidAssetTools.EnsureShared(field);
             AssetDatabase.SaveAssets();
             return field;
-        }
-
-        private static Material CreateOptionalMaterial(string name, string shaderName)
-        {
-            Shader shader = Shader.Find(shaderName);
-            if (shader == null) shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-            if (shader == null) return null;
-            var material = new Material(shader) { enableInstancing = true };
-            AssetDatabase.CreateAsset(material,
-                AssetDatabase.GenerateUniqueAssetPath(AssetFolder + "/" + name));
-            return material;
         }
 
         private static void EnsureFolder()

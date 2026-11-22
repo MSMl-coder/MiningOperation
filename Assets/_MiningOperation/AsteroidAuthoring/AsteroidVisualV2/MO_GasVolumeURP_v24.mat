@@ -7,14 +7,14 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AsteroidFar_URP
-  m_Shader: {fileID: 4800000, guid: 1f68be107faf74dcb984c3a5a42af65d, type: 3}
+  m_Name: MO_GasVolumeURP_v24
+  m_Shader: {fileID: 4800000, guid: a749638151a624b789d41643fbb0c904, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 1
+  m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -25,8 +25,16 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _AmbientStrength: 2.11
+    - _GasBrightness: 1
+    - _GasContrast: 0.35
+    - _GasDrift: 0.553
+    - _GasNoiseScale: 1
+    - _GasOpacity: 0.79
+    - _GasSteps: 17.8
     m_Colors:
-    - _BaseColor: {r: 0.4716981, g: 0.46057314, b: 0.46057314, a: 1}
+    - _GasColorA: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    - _GasColorB: {r: 0.5, g: 0.4756679, b: 0.4504717, a: 1}
+    - _GasLightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _GasLightDirection: {r: -0.42, g: 0.71, b: -0.56, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

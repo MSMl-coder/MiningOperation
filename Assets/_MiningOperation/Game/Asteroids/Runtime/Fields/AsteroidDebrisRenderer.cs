@@ -28,14 +28,16 @@ namespace MiningOperation.Asteroids
         private Matrix4x4[][] batches;
         private int[] counts;
         private Material material;
+        private readonly Material controllerMaterial;
         private AsteroidVisibilityGrid visibilityGrid;
         private readonly List<int> visibleIndices = new List<int>();
         public int VisibleCount { get; private set; }
 
-        public AsteroidDebrisRenderer(Transform fieldRoot, AsteroidFieldSettings fieldSettings)
+        public AsteroidDebrisRenderer(Transform fieldRoot, AsteroidFieldSettings fieldSettings, Material sharedSurface = null)
         {
             root = fieldRoot;
             settings = fieldSettings;
+            controllerMaterial = sharedSurface;
         }
 
         public void Initialize(AsteroidFieldSnapshot snapshot)
@@ -43,7 +45,23 @@ namespace MiningOperation.Asteroids
             Dispose();
             if (snapshot?.asteroids == null || snapshot.asteroids.Count == 0 ||
                 settings == null || !settings.enableDecorativeDebris || !SystemInfo.supportsInstancing) return;
-            material = AsteroidStableMaterials.Create(
+
+            // A saved field snapshot can outlive its authoring ScriptableObject links.
+            // When Unity loses a .asset -> generator reference, we must NOT fail the
+            // whole restore just because optional decorative debris cannot be built.
+            bool isIce = snapshot.contentType == MiningFieldContent.Ice ||
+                snapshot.contentType == MiningFieldContent.IceShelf;
+            AsteroidGeneratorSettings generation = isIce && settings.iceGeneratorSettings != null
+                ? settings.iceGeneratorSettings : settings.asteroidSettings;
+            if (generation == null)
+            {
+                Debug.LogWarning("[MO] Decorative debris skipped for field '" + snapshot.fieldId +
+                    "': its Field Settings asset has no Asteroid Settings generator reference. " +
+                    "Open that Field Settings asset and restore Asteroid Settings (and the generator's Resource Catalog). " +
+                    "Saved asteroid records were not changed.", root);
+                return;
+            }
+            material = controllerMaterial != null ? controllerMaterial : AsteroidStableMaterials.Create(
                 (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceMaterial != null
                     ? settings.iceMaterial : settings.distantMaterial,
                 settings.allowExperimentalRockShaders,
@@ -56,7 +74,8 @@ namespace MiningOperation.Asteroids
             if (material == null) return;
             material.enableInstancing = true;
             material.hideFlags = HideFlags.DontSave;
-            material.name = "MO Decorative Fragments (runtime)";
+            if (!ReferenceEquals(material, controllerMaterial))
+                material.name = "MO Decorative Fragments (runtime)";
             int variantCount = Mathf.Clamp(settings.debrisMeshVariants, 1, 24);
             for (int i = 0; i < variantCount; ++i)
             {
@@ -65,13 +84,9 @@ namespace MiningOperation.Asteroids
                     seed = AsteroidIdUtility.DeriveSeed(snapshot.fieldSeed ^ 0x2940DE52L, i + 123),
                     generatorVersion = 3,
                     diameterMeters = 1f,
-                    geometryProfile = AsteroidGeometryProfile.FromSettings(
-                        (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceGeneratorSettings != null
-                            ? settings.iceGeneratorSettings : settings.asteroidSettings)
+                    geometryProfile = AsteroidGeometryProfile.FromSettings(generation)
                 };
-                Mesh mesh = AsteroidGeometryGenerator.Generate(rock,
-                    (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) && settings.iceGeneratorSettings != null
-                        ? settings.iceGeneratorSettings : settings.asteroidSettings, 1);
+                Mesh mesh = AsteroidGeometryGenerator.Generate(rock, generation, 1);
                 mesh.name = "MO_Debris_Variant_" + i;
                 mesh.hideFlags = HideFlags.DontSave;
                 meshes.Add(mesh);
@@ -166,7 +181,8 @@ namespace MiningOperation.Asteroids
             foreach (Mesh mesh in meshes) AsteroidGeneration.DestroyTemporary(mesh);
             meshes.Clear();
             fragments.Clear();
-            if (material != null) AsteroidGeneration.DestroyTemporary(material);
+            if (material != null && !ReferenceEquals(material, controllerMaterial))
+                AsteroidGeneration.DestroyTemporary(material);
             material = null;
             batches = null;
             counts = null;

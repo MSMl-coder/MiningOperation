@@ -24,16 +24,21 @@ namespace MiningOperation.Asteroids
         private AsteroidVisibilityGrid visibilityGrid;
         private AsteroidFieldSnapshot snapshot;
         private Material material;
+        private readonly Material controllerMaterial;
+        // One property block per asteroid. Graphics.RenderMesh may defer submission;
+        // do not mutate a shared block before the GPU has consumed the previous draw.
+        private readonly Dictionary<int, MaterialPropertyBlock> perAsteroidProperties = new Dictionary<int, MaterialPropertyBlock>();
         private int warmCursor;
         private double simulationSeconds;
         public int VisibleCount { get; private set; }
         public int CachedMeshes => uniqueMeshes.Count;
         public bool Ready => material != null && snapshot != null;
 
-        public AsteroidFieldFarRenderer(Transform fieldRoot, AsteroidFieldSettings fieldSettings)
+        public AsteroidFieldFarRenderer(Transform fieldRoot, AsteroidFieldSettings fieldSettings, Material sharedSurface = null)
         {
             root = fieldRoot;
             settings = fieldSettings;
+            controllerMaterial = sharedSurface;
         }
 
         public void Initialize(AsteroidFieldSnapshot field)
@@ -43,9 +48,10 @@ namespace MiningOperation.Asteroids
                 settings == null || settings.asteroidSettings == null || !settings.useGpuFarField)
                 return;
             snapshot = field;
-            material = AsteroidStableMaterials.Create(
-                (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf) && settings.iceMaterial != null
-                    ? settings.iceMaterial : settings.distantMaterial,
+            material = controllerMaterial != null ? controllerMaterial : AsteroidStableMaterials.Create(
+                settings.unifiedAsteroidMaterial != null ? settings.unifiedAsteroidMaterial :
+                    ((field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf) && settings.iceMaterial != null
+                        ? settings.iceMaterial : settings.asteroidMaterial),
                 settings.allowExperimentalRockShaders,
                 (field.contentType == MiningFieldContent.Ice || field.contentType == MiningFieldContent.IceShelf)
                     ? new Color(.76f, .89f, 1f, 1f) : new Color(.83f, .82f, .78f),
@@ -114,7 +120,10 @@ namespace MiningOperation.Asteroids
             for (int i = visibleIndices.Count - 1; i >= 0; --i)
             {
                 AsteroidFieldRecord rec = snapshot.asteroids[visibleIndices[i]];
-                if (rec == null || rec.asteroid == null || detailed.Contains(rec.index) ||
+                if (rec == null || rec.asteroid == null ||
+                    (detailed.Contains(rec.index) && (!AsteroidStableMaterials.IsUnified(material) ||
+                     (root.TransformPoint(rec.localPosition) - viewer).magnitude <
+                         Mathf.Min(settings.spawnDistanceMeters, settings.detailedDistanceMeters) * .85f)) ||
                     (settings.hideDepletedAsteroids && rec.asteroid.remainingMassKg <= 0) ||
                     (root.TransformPoint(rec.localPosition) - viewer).sqrMagnitude > maxDistanceSq)
                     visibleIndices.RemoveAt(i);
@@ -129,7 +138,7 @@ namespace MiningOperation.Asteroids
             warmCursor = 0;
         }
 
-        public void Render(double timeSeconds)
+        public void Render(double timeSeconds, Vector3 viewerPosition)
         {
             if (!Ready || visibleIndices.Count == 0) { VisibleCount = 0; return; }
             simulationSeconds = timeSeconds;
@@ -145,7 +154,8 @@ namespace MiningOperation.Asteroids
             {
                 if (drawn >= settings.maxFarRenderDraws) break;
                 AsteroidFieldRecord rec = snapshot.asteroids[i];
-                if (rec == null || rec.asteroid == null || detailed.Contains(rec.index) ||
+                if (rec == null || rec.asteroid == null ||
+                    (detailed.Contains(rec.index) && !AsteroidStableMaterials.IsUnified(material)) ||
                     !uniqueMeshes.TryGetValue(rec.index, out Mesh mesh) || mesh == null) continue;
                 Quaternion rotation = settings.enableAsteroidRotation
                     ? AsteroidSpin.Evaluate(rec.localRotation, rec.asteroid.seed,
@@ -153,6 +163,22 @@ namespace MiningOperation.Asteroids
                     : rec.localRotation;
                 Matrix4x4 objectToWorld = parent * Matrix4x4.TRS(rec.localPosition,
                     rotation, Vector3.one);
+                if (AsteroidStableMaterials.IsUnified(material))
+                {
+                    float distance = Vector3.Distance(root.TransformPoint(rec.localPosition), viewerPosition);
+                    float handoff = Mathf.Min(settings.spawnDistanceMeters, settings.detailedDistanceMeters);
+                    float nearAlpha = detailed.Contains(rec.index) ?
+                        Mathf.Clamp01((handoff - distance) / Mathf.Max(35f, handoff * .15f)) : 0f;
+                    if (!perAsteroidProperties.TryGetValue(rec.index, out MaterialPropertyBlock props))
+                    {
+                        props = new MaterialPropertyBlock();
+                        perAsteroidProperties.Add(rec.index, props);
+                    }
+                    props.SetFloat("_MO_ObjectRadius", Mathf.Max(.001f, rec.asteroid.diameterMeters * .5f));
+                    props.SetFloat("_MO_SurfaceSeed", (unchecked((uint)rec.asteroid.seed) & 65535u) / 65535f);
+                    props.SetFloat("_MO_LODVisibility", 1f - nearAlpha);
+                    rp.matProps = props;
+                }
                 Graphics.RenderMesh(rp, mesh, 0, objectToWorld);
                 drawn++;
             }
@@ -182,13 +208,15 @@ namespace MiningOperation.Asteroids
                 AsteroidGeneration.DestroyTemporary(mesh);
             uniqueMeshes.Clear();
             failures.Clear();
+            perAsteroidProperties.Clear();
             visibleIndices.Clear();
             detailed.Clear();
             visibilityGrid = null;
             snapshot = null;
             warmCursor = 0;
             VisibleCount = 0;
-            if (material != null) AsteroidGeneration.DestroyTemporary(material);
+            if (material != null && !ReferenceEquals(material, controllerMaterial))
+                AsteroidGeneration.DestroyTemporary(material);
             material = null;
         }
     }

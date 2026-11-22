@@ -18,6 +18,8 @@ namespace MiningOperation.Asteroids.Editor
         private readonly MOEmbeddedAsteroidPreview sample = new MOEmbeddedAsteroidPreview();
         private readonly List<AsteroidFieldPlacement> rocks = new List<AsteroidFieldPlacement>();
         private MOGasFieldSnapshot gasPreview;
+        private bool gasVisualRefreshQueued;
+        private bool? hasExistingSettingsCache;
         private string previewSignature;
         private string lastError;
         private Vector2 leftScroll, rightScroll;
@@ -25,11 +27,13 @@ namespace MiningOperation.Asteroids.Editor
         private bool advanced;
         private bool advancedQuality;
         private bool advancedDebris;
-        private bool advancedAssets;
         private bool showBySize = true;
         private MiningFieldContent newKind = MiningFieldContent.Rock;
         private float mapScale = 1f;
         private readonly Color panel = new Color(.115f, .16f, .195f);
+        private UnityEditor.MaterialEditor asteroidMaterialEditor;
+        private Material editingSurface;
+        private bool showMaterialParameters;
 
         [MenuItem("Tools/Mining Operation/Asteroid Field Studio")]
         public static void Open()
@@ -48,11 +52,19 @@ namespace MiningOperation.Asteroids.Editor
 
         private void OnEnable()
         {
+            hasExistingSettingsCache = null;
             AsteroidAuthoringWorkflow.StateChanged += Repaint;
             EditorApplication.update += Tick;
-            if (selected == null && Selection.activeGameObject != null)
+            if (selected == null)
             {
-                var anchor = Selection.activeGameObject.GetComponent<AsteroidFieldSpawnPoint>();
+                var anchor = Selection.activeGameObject != null
+                    ? Selection.activeGameObject.GetComponent<AsteroidFieldSpawnPoint>() : null;
+                if (anchor == null)
+                {
+                    var anchors = UnityEngine.Object.FindObjectsByType<AsteroidFieldSpawnPoint>(
+                        FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    if (anchors.Length == 1 && anchors[0].gameObject.scene.IsValid()) anchor = anchors[0];
+                }
                 if (anchor != null) SelectAnchor(anchor);
             }
         }
@@ -61,11 +73,25 @@ namespace MiningOperation.Asteroids.Editor
             AsteroidAuthoringWorkflow.StateChanged -= Repaint;
             EditorApplication.update -= Tick;
             sample.Cleanup();
+            ReleaseMaterialEditor();
         }
         private void Tick()
         {
             if (AsteroidAuthoringWorkflow.IsBuilding) Repaint();
         }
+        private void OnProjectChange()
+        {
+            hasExistingSettingsCache = null;
+            Repaint();
+        }
+
+        private bool HasExistingSettingsOnDisk()
+        {
+            if (!hasExistingSettingsCache.HasValue)
+                hasExistingSettingsCache = AsteroidAuthoringWorkflow.FindExistingSettingsAssets(out _);
+            return hasExistingSettingsCache.Value;
+        }
+
         private void OnSelectionChange()
         {
             var a = Selection.activeGameObject != null ? Selection.activeGameObject.GetComponent<AsteroidFieldSpawnPoint>() : null;
@@ -74,7 +100,8 @@ namespace MiningOperation.Asteroids.Editor
         private void SelectAnchor(AsteroidFieldSpawnPoint a)
         {
             selected = a;
-            field = a != null ? a.settings : field;
+            ReleaseMaterialEditor();
+            field = a != null ? a.settings : null;
             if (a != null && a.settings != null)
             {
                 Undo.RecordObject(a, "Initialize spawn-specific settings");
@@ -166,10 +193,13 @@ namespace MiningOperation.Asteroids.Editor
                     using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
                     {
                         if (GUILayout.Button("+ Create Spawn Point", GUILayout.Height(30f))) CreatePoint();
-                        if (GUILayout.Button("Create Ready Setup", GUILayout.Height(23f))) CreateSetup();
+                        if (!HasExistingSettingsOnDisk())
+                        {
+                            if (GUILayout.Button("Create First-Time Setup", GUILayout.Height(23f))) CreateSetup();
+                        }
                     }
                     GUILayout.Space(6);
-                    EditorGUILayout.HelpBox("Place empty Spawn Points in Scene View. Each location has its own seed and formation.", MessageType.None);
+                    EditorGUILayout.HelpBox("Choose a location, edit its parameters, then Build. Existing settings are never replaced automatically.", MessageType.None);
                 }
             }
         }
@@ -211,6 +241,14 @@ namespace MiningOperation.Asteroids.Editor
             EditorGUILayout.PropertyField(so.FindProperty("settings"), new GUIContent("Shared library / defaults"));
             EditorGUILayout.PropertyField(so.FindProperty("fieldSeed"), new GUIContent("Seed"));
             EditorGUILayout.PropertyField(so.FindProperty("fieldId"), new GUIContent("Persistent ID"));
+            using (new EditorGUI.DisabledScope(selected.settings == null || EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                if (GUILayout.Button("Rename linked Field Settings to type + formation", GUILayout.Height(22f)))
+                {
+                    try { MOUnifiedAsteroidAssetTools.RenameFieldSettings(selected); }
+                    catch (Exception ex) { lastError = ex.Message; }
+                }
+            }
             // Additional type-specific options are in this same panel, not another tool.
             MiningFieldContent kind = (MiningFieldContent)type.enumValueIndex;
             bool changed = false;
@@ -226,16 +264,6 @@ namespace MiningOperation.Asteroids.Editor
                 if (selected.Controller != null && selected.Controller.Snapshot != null)
                 {
                     EditorGUILayout.HelpBox("A saved asteroid field also exists here. It stays untouched and is not rendered in Gas mode.", MessageType.Warning);
-                    if (GUILayout.Button("Clear obsolete rock snapshot..."))
-                    {
-                        if (EditorUtility.DisplayDialog("Delete saved asteroid records?",
-                            "This permanently deletes the old rock resource snapshot on this Spawn Point. The gas visuals will be unaffected.", "Delete Rock Snapshot", "Cancel"))
-                        {
-                            Undo.RecordObject(selected.Controller, "Remove obsolete rock snapshot");
-                            selected.Controller.ClearField();
-                            EditorUtility.SetDirty(selected.Controller);
-                        }
-                    }
                 }
             }
             else
@@ -261,14 +289,7 @@ namespace MiningOperation.Asteroids.Editor
                         Prop(so, "shelfFractureStrength", "Surface fractures");
                         Prop(so, "shelfCollisionStrength", "Collision ridge strength");
                         Prop(so, "shelfRiftDepth", "Rift depth");
-                        EditorGUILayout.HelpBox("Continental-scale ice plates with collision ridges, interlocking masses and long navigable rifts. Use the preset for Homeworld 3-like plateau fields.", MessageType.None);
-                        if (GUILayout.Button("Apply Continental Ice Shelf Preset", GUILayout.Height(24f)))
-                            SetIceShelfPreset(so, type);
-                    }
-                    else if (kind == MiningFieldContent.Ice || kind == MiningFieldContent.IceShelf)
-                    {
-                        if (GUILayout.Button("Apply Continental Ice Shelf Preset", GUILayout.Height(22f)))
-                            SetIceShelfPreset(so, type);
+                        EditorGUILayout.HelpBox("Large ice plates with collision ridges and long rifts. Use the parameters above to shape this formation.", MessageType.None);
                     }
                     Prop(so, "countMode", "Count");
                     var countMode = (AsteroidCountMode)so.FindProperty("countMode").enumValueIndex;
@@ -345,76 +366,6 @@ namespace MiningOperation.Asteroids.Editor
             }
             EditorGUILayout.Space(6);
             DrawPreview();
-        }
-
-        // Lightweight scene-authoring preset. Mutates only this spawn point,
-        // never shared Field Settings or existing mined resource snapshots.
-        private static void SetIceShelfPreset(SerializedObject so, SerializedProperty type)
-        {
-            type.enumValueIndex = (int)MiningFieldContent.IceShelf;
-            so.FindProperty("useOverrides").boolValue = true;
-            so.FindProperty("formation").intValue = (int)AsteroidFormationType.IceShelfContinents;
-            so.FindProperty("countMode").intValue = (int)AsteroidCountMode.Fixed;
-            so.FindProperty("fixedCount").intValue = 9;
-            so.FindProperty("radiusMeters").floatValue = 9800f;
-            so.FindProperty("thicknessMeters").floatValue = 1200f;
-            so.FindProperty("cloudVerticalScale").floatValue = .10f;
-            so.FindProperty("minimumDiameterMeters").floatValue = 900f;
-            so.FindProperty("maximumDiameterMeters").floatValue = 5200f;
-            so.FindProperty("smallAsteroidBias").floatValue = .08f;
-            so.FindProperty("surfaceGapMeters").floatValue = 120f;
-            so.FindProperty("placementAttempts").intValue = 220;
-            so.FindProperty("clusterCount").intValue = 3;
-            so.FindProperty("shelfThicknessRatio").floatValue = .092f;
-            so.FindProperty("shelfFractureStrength").floatValue = .52f;
-            so.FindProperty("shelfCollisionStrength").floatValue = .64f;
-            so.FindProperty("shelfRiftDepth").floatValue = .58f;
-            so.FindProperty("overrideComposition").boolValue = true;
-            so.FindProperty("clusterStrength").floatValue = .72f;
-            so.FindProperty("densityPockets").intValue = 4;
-            so.FindProperty("pocketWidthFraction").floatValue = .11f;
-            // Shelf landscapes should be readable as massive, nearly static geology.
-            so.FindProperty("visuals.enableAsteroidRotation").boolValue = false;
-            so.FindProperty("visuals.enableDecorativeDebris").boolValue = false;
-            so.FindProperty("visuals.decorativeRockCount").intValue = 0;
-            so.FindProperty("visuals.microFragmentCount").intValue = 0;
-        }
-
-        private static void ApplyRetroMiningPreset(SerializedObject so, MiningFieldContent content)
-        {
-            if (content == MiningFieldContent.Gas) return;
-            so.FindProperty("depthConstraints.depthMode").intValue = (int)MOFieldDepthMode.PlanarSlab;
-            so.FindProperty("depthConstraints.yCenter").floatValue = 0f;
-            so.FindProperty("depthConstraints.yHalfRange").floatValue = 180f;
-            so.FindProperty("depthConstraints.yJitter").floatValue = 14f;
-            so.FindProperty("depthConstraints.flattenRotationToPlane").boolValue = true;
-            so.FindProperty("visuals.artDirection").intValue = (int)MOArtDirection.RetroSciFi;
-            so.FindProperty("visuals.retroNoiseSuppression").floatValue = .72f;
-            so.FindProperty("visuals.retroCraterReadability").floatValue = .58f;
-            so.FindProperty("visuals.retroSilhouetteStrength").floatValue = .68f;
-            so.FindProperty("visuals.enableDecorativeDebris").boolValue = true;
-            so.FindProperty("visuals.decorativeRockCount").intValue = 800;
-            so.FindProperty("visuals.microFragmentCount").intValue = 0;
-            so.FindProperty("visuals.enableAsteroidRotation").boolValue = true;
-            so.FindProperty("visuals.rotationSpeedMultiplier").floatValue = .55f;
-            if (content != MiningFieldContent.IceShelf)
-            {
-                string prefix = content == MiningFieldContent.Ice ? "iceGeology." : "rockGeology.";
-                so.FindProperty(prefix + "shapeIrregularity").floatValue = .42f;
-                so.FindProperty(prefix + "craterIntensity").floatValue = .34f;
-                so.FindProperty(prefix + "surfaceRoughness").floatValue = .14f;
-                so.FindProperty(prefix + "minCraters").intValue = 1;
-                so.FindProperty(prefix + "maxCraters").intValue = 6;
-                so.FindProperty(prefix + "minimumAxisScale").floatValue = .68f;
-            }
-        }
-
-        private static void ResetRetroMiningStyle(SerializedObject so)
-        {
-            so.FindProperty("visuals.artDirection").intValue = (int)MOArtDirection.Default;
-            so.FindProperty("visuals.retroNoiseSuppression").floatValue = .65f;
-            so.FindProperty("visuals.retroCraterReadability").floatValue = .55f;
-            so.FindProperty("visuals.retroSilhouetteStrength").floatValue = .60f;
         }
 
         private void DrawShape()
@@ -494,6 +445,38 @@ namespace MiningOperation.Asteroids.Editor
             EditorGUILayout.HelpBox("These values belong ONLY to the selected Spawn Point. Geology changes require rebuilding that field; LOD/streaming changes do not change saved asteroid mass or ore.", MessageType.Info);
         }
 
+        private void ReleaseMaterialEditor()
+        {
+            if (asteroidMaterialEditor != null) DestroyImmediate(asteroidMaterialEditor);
+            asteroidMaterialEditor = null;
+            editingSurface = null;
+        }
+
+        private void DrawUnifiedMaterialEditor(Material material)
+        {
+            if (material == null) return;
+            showMaterialParameters = EditorGUILayout.Foldout(showMaterialParameters,
+                "Edit material: colors, macro/detail noise, relief, lighting", true);
+            if (!showMaterialParameters) return;
+            if (material != editingSurface || asteroidMaterialEditor == null)
+            {
+                ReleaseMaterialEditor();
+                editingSurface = material;
+                asteroidMaterialEditor = (UnityEditor.MaterialEditor)UnityEditor.Editor.CreateEditor(material,
+                    typeof(UnityEditor.MaterialEditor));
+            }
+            if (asteroidMaterialEditor != null)
+            {
+                EditorGUI.BeginChangeCheck();
+                using (new EditorGUI.IndentLevelScope()) asteroidMaterialEditor.OnInspectorGUI();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorUtility.SetDirty(material);
+                    sample.Invalidate();
+                }
+            }
+        }
+
         private void DrawVisuals()
         {
             if (field == null)
@@ -502,13 +485,6 @@ namespace MiningOperation.Asteroids.Editor
                 return;
             }
             selected.EnsureLocalSettings();
-            Header("Scene background & lighting (shared by all locations)");
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
-            {
-                if (GUILayout.Button("Apply Bright Retro Sky + Lighting", GUILayout.Height(28f)))
-                    AsteroidV2SceneSetup.InstallRetroEnvironment();
-            }
-            EditorGUILayout.HelpBox("The sky and lights are scene-wide. All rock, ice and gas Spawn Points remain independent; field and mining saves are not rebuilt.", MessageType.None);
             MiningFieldContent content = selected.contentType;
             var local = new SerializedObject(selected);
             local.Update();
@@ -540,31 +516,18 @@ namespace MiningOperation.Asteroids.Editor
             else
             {
                 bool ice = content == MiningFieldContent.Ice || content == MiningFieldContent.IceShelf;
-                Header("Art direction — this spawn");
-                Prop(local, "visuals.artDirection", "Shape style");
-                if (local.FindProperty("visuals.artDirection").enumValueIndex != (int)MOArtDirection.Default)
-                {
-                    Prop(local, "visuals.retroNoiseSuppression", "Noise suppression");
-                    Prop(local, "visuals.retroCraterReadability", "Crater readability");
-                    Prop(local, "visuals.retroSilhouetteStrength", "Silhouette simplification");
-                }
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Apply Retro Sci-Fi Preset"))
-                        ApplyRetroMiningPreset(local, content);
-                    if (GUILayout.Button("Reset Style"))
-                        ResetRetroMiningStyle(local);
-                }
-                EditorGUILayout.HelpBox("Retro presets push the generator toward cleaner silhouettes, readable craters and lower surface noise for classic sci-fi fields.", MessageType.None);
-                Header(ice ? "Ice material — this spawn" : "Rock material — this spawn");
-                if (ice)
-                    Prop(local, "visuals.iceMaterialOverride", "Override ice material");
+                Header("Unified asteroid surface — near + far + debris");
+                Prop(local, "visuals.unifiedAsteroidMaterialOverride", "Unique material for this Spawn Point");
+                Material authored = local.FindProperty("visuals.unifiedAsteroidMaterialOverride").objectReferenceValue as Material;
+                if (authored == null) authored = field.unifiedAsteroidMaterial;
+                if (authored == null)
+                    EditorGUILayout.HelpBox("No unified surface assigned. Use 'Install unified surface' below. Legacy materials remain as temporary fallback.", MessageType.Warning);
                 else
                 {
-                    Prop(local, "visuals.rockMaterialOverride", "Override rock material");
-                    Prop(local, "visuals.distantMaterialOverride", "Override far material");
-                    Prop(local, "visuals.rockNormalStrength", "Micro normal strength");
-                    Prop(local, "visuals.allowExperimentalRockShaders", "Experimental rock shaders");
+                    EditorGUILayout.ObjectField("Active material", authored, typeof(Material), false);
+                    EditorGUILayout.HelpBox(ice ? "Ice mode is selected automatically for this Spawn Point. The same shader controls both rock and ice palettes." :
+                        "Rock mode is selected automatically. Near and far share one source material; no separate far asset is required.", MessageType.None);
+                    DrawUnifiedMaterialEditor(authored);
                 }
                 Header("Debris & motion — this spawn");
                 Prop(local, "visuals.enableDecorativeDebris", "Decorative debris");
@@ -593,55 +556,53 @@ namespace MiningOperation.Asteroids.Editor
             {
                 selected.Controller?.InvalidateLocalConfiguration();
                 EditorUtility.SetDirty(selected);
+                if (content == MiningFieldContent.Gas && !EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                    // Heavy GameObject/mesh changes must not happen inside IMGUI layout.
+                    // Queue a single Editor tick instead, preserving the saved gas layout.
+                    if (!gasVisualRefreshQueued)
+                    {
+                        gasVisualRefreshQueued = true;
+                        var anchorToRefresh = selected;
+                        EditorApplication.delayCall += () =>
+                        {
+                            gasVisualRefreshQueued = false;
+                            if (anchorToRefresh == null || EditorApplication.isPlayingOrWillChangePlaymode)
+                                return;
+                            var renderer = anchorToRefresh.GetComponent<MOGasFieldRenderer>();
+                            if (renderer == null || renderer.Snapshot == null) return;
+                            try
+                            {
+                                renderer.RebuildVisuals();
+                                EditorUtility.SetDirty(renderer);
+                                if (anchorToRefresh.gameObject.scene.IsValid())
+                                    EditorSceneManager.MarkSceneDirty(anchorToRefresh.gameObject.scene);
+                            }
+                            catch (Exception ex) { Debug.LogException(ex, renderer); }
+                        };
+                    }
+                }
                 sample.Invalidate();
                 Repaint();
             }
-
-            if (content == MiningFieldContent.Gas)
+            if (content != MiningFieldContent.Gas)
             {
-                var renderer = selected.GetComponent<MOGasFieldRenderer>();
-                using (new EditorGUI.DisabledScope(renderer == null || renderer.Snapshot == null))
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Apply Cloud Appearance", GUILayout.Height(26f)))
+                    if (GUILayout.Button("Install unified surface"))
                     {
-                        renderer.RebuildVisuals();
-                        EditorSceneManager.MarkSceneDirty(selected.gameObject.scene);
+                        try { MOUnifiedAsteroidAssetTools.EnsureShared(field); sample.Invalidate(); Repaint(); }
+                        catch (Exception ex) { lastError = ex.Message; }
+                    }
+                    if (GUILayout.Button("Make unique for Spawn Point"))
+                    {
+                        try { MOUnifiedAsteroidAssetTools.MakeLocal(selected); ReleaseMaterialEditor(); sample.Invalidate(); Repaint(); }
+                        catch (Exception ex) { lastError = ex.Message; }
                     }
                 }
+                EditorGUILayout.HelpBox("One material pipeline for rock/ice and near/far. For independent edits use 'Make unique'. Old rock, ice, and far assets are fallback only and are not deleted automatically.", MessageType.None);
             }
-            advancedAssets = EditorGUILayout.Foldout(advancedAssets, "Shared assets / installation", true);
-            if (advancedAssets)
-            {
-                EditorGUILayout.HelpBox("Assets here are SHARED defaults. To customize the material itself for just one location, duplicate its .mat asset and assign it to that location's Override Material field above.", MessageType.Info);
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    if (content == MiningFieldContent.Gas)
-                        EditorGUILayout.ObjectField("Shared gas material", field.gasParticleMaterial, typeof(Material), false);
-                    else if (content == MiningFieldContent.Ice || content == MiningFieldContent.IceShelf)
-                        EditorGUILayout.ObjectField("Shared ice material", field.iceMaterial, typeof(Material), false);
-                    else EditorGUILayout.ObjectField("Shared rock material", field.asteroidMaterial, typeof(Material), false);
-                }
-                using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
-                {
-                    if (content == MiningFieldContent.Rock)
-                    {
-                        if (GUILayout.Button("Restore stable rock lighting (this spawn)"))
-                        {
-                            Undo.RecordObject(selected, "Restore this spawn lighting");
-                            selected.visuals.allowExperimentalRockShaders = false;
-                            selected.visuals.rockNormalStrength = .18f;
-                            selected.Controller?.InvalidateLocalConfiguration();
-                            EditorUtility.SetDirty(selected);
-                        }
-                        if (GUILayout.Button("Install shared rock texture assets"))
-                            AsteroidRockTextureGenerator.Install(field);
-                    }
-                    else if (GUILayout.Button("Install / repair shared ice & gas assets"))
-                        MOVisualAssetInstaller.Install(field);
-
-                }
-            }
-            EditorGUILayout.HelpBox("All appearance and motion values above are stored on the selected Spawn Point. Shared assets are only references/fallbacks.", MessageType.None);
+            else EditorGUILayout.HelpBox("Gas uses its own volumetric/particle materials.", MessageType.None);
         }
 
         private void DrawPreview()
@@ -685,8 +646,11 @@ namespace MiningOperation.Asteroids.Editor
                     selected.shelfThicknessRatio, selected.shelfFractureStrength,
                     selected.shelfCollisionStrength, selected.shelfRiftDepth,
                     selected.ActiveGeology,
-                    selected.contentType == MiningFieldContent.Ice || selected.contentType == MiningFieldContent.IceShelf
-                        ? selected.visuals.iceMaterialOverride : selected.visuals.rockMaterialOverride);
+                    selected.visuals.unifiedAsteroidMaterialOverride != null
+                        ? selected.visuals.unifiedAsteroidMaterialOverride :
+                    (field != null && field.unifiedAsteroidMaterial != null ? field.unifiedAsteroidMaterial :
+                    (selected.contentType == MiningFieldContent.Ice || selected.contentType == MiningFieldContent.IceShelf
+                        ? selected.visuals.iceMaterialOverride : selected.visuals.rockMaterialOverride)));
                 EditorGUILayout.LabelField("Real geometry preview · drag to rotate", EditorStyles.centeredGreyMiniLabel);
             }
         }
@@ -844,12 +808,47 @@ namespace MiningOperation.Asteroids.Editor
         {
             if (field == null || !AsteroidAuthoringWorkflow.IsReady(field))
             {
-                CreateSetup();
-                return; // CreateSetup already creates the first Spawn Point.
+                // Prefer an existing loaded settings asset over duplicating persistent assets.
+                var guid = AssetDatabase.FindAssets("t:AsteroidFieldSettings", new[] { "Assets/_MiningOperation" });
+                AsteroidFieldSettings candidate = null;
+                foreach (string id in guid)
+                {
+                    var found = AssetDatabase.LoadAssetAtPath<AsteroidFieldSettings>(AssetDatabase.GUIDToAssetPath(id));
+                    if (!AsteroidAuthoringWorkflow.IsReady(found)) continue;
+                    if (candidate != null) { candidate = null; break; } // ambiguous: do not guess
+                    candidate = found;
+                }
+                if (candidate == null)
+                {
+                    EditorUtility.DisplayDialog("Select shared settings",
+                        "Assign an existing, working Field Settings asset on a Spawn Point first. " +
+                        "If assets show Script: None, repair them before creating new configurations.", "OK");
+                    return;
+                }
+                field = candidate;
+            }
+            if (newKind == MiningFieldContent.Ice || newKind == MiningFieldContent.IceShelf ||
+                newKind == MiningFieldContent.Gas)
+            {
+                try
+                {
+                    if (newKind == MiningFieldContent.Gas) MOVisualAssetInstaller.Install(field);
+                    else
+                    {
+                        MOVisualAssetInstaller.InstallIceResources(field);
+                        MOUnifiedAsteroidAssetTools.EnsureShared(field);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    EditorUtility.DisplayDialog("Material setup failed", ex.Message, "OK");
+                    return;
+                }
             }
             AsteroidFieldSpawnPoint anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field);
             Undo.RecordObject(anchor, "Set new field type");
             anchor.contentType = newKind;
+            if (newKind == MiningFieldContent.IceShelf) anchor.formation = AsteroidFormationType.IceShelfContinents;
             if (newKind == MiningFieldContent.Gas)
                 anchor.gasPresentation = MOGasPresentation.Volumetric;
             anchor.gameObject.name = newKind + " Spawn Point";
@@ -860,10 +859,53 @@ namespace MiningOperation.Asteroids.Editor
         private void CreateSetup()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-            field = AsteroidAuthoringWorkflow.CreateReadyAssets();
-            MOVisualAssetInstaller.Install(field);
+            if (AsteroidAuthoringWorkflow.FindExistingSettingsAssets(out string existing))
+            {
+                EditorUtility.DisplayDialog("Existing settings found",
+                    "Cannot create a second setup while these assets exist: " + existing +
+                    ". Repair and reuse the original assets instead.", "OK");
+                return;
+            }
+            try { field = AsteroidAuthoringWorkflow.CreateReadyAssets(newKind); }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Setup cancelled", ex.Message, "OK");
+                return;
+            }
+            if (newKind == MiningFieldContent.Ice || newKind == MiningFieldContent.IceShelf ||
+                newKind == MiningFieldContent.Gas)
+            {
+                try
+                {
+                    if (newKind == MiningFieldContent.Gas) MOVisualAssetInstaller.Install(field);
+                    else
+                    {
+                        MOVisualAssetInstaller.InstallIceResources(field);
+                        MOUnifiedAsteroidAssetTools.EnsureShared(field);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // The core assets have already been saved. Do not leave an orphaned
+                    // first-time setup without a Spawn Point if optional visuals fail.
+                    Debug.LogWarning("[MO] Optional ice/gas material setup incomplete: " + ex.Message);
+                }
+            }
+            // When an empty Spawn Point already exists, attach the first-time assets
+            // to that anchor instead of creating a duplicate location.
+            if (selected != null && selected.settings == null)
+            {
+                Undo.RecordObject(selected, "Assign initial field settings");
+                selected.settings = field;
+                selected.SyncToController();
+                EditorUtility.SetDirty(selected);
+                EditorSceneManager.MarkSceneDirty(selected.gameObject.scene);
+                SelectAnchor(selected);
+                return;
+            }
             var anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field);
             anchor.contentType = newKind;
+            if (newKind == MiningFieldContent.IceShelf) anchor.formation = AsteroidFormationType.IceShelfContinents;
             if (newKind == MiningFieldContent.Gas)
                 anchor.gasPresentation = MOGasPresentation.Volumetric;
             anchor.gameObject.name = newKind + " Spawn Point";

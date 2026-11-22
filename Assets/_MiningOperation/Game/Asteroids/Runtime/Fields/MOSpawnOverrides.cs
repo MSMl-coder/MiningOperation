@@ -12,15 +12,6 @@ namespace MiningOperation.Asteroids
         Strict2DPlane = 2
     }
 
-    public enum MOArtDirection
-    {
-        Default = 0,
-        RetroSciFi = 1,
-        RetroMonolith = 2,
-        RetroCratered = 3,
-        RetroStationReady = 4
-    }
-
     [Serializable]
     public sealed class MOSpawnDepthConstraints
     {
@@ -196,6 +187,8 @@ namespace MiningOperation.Asteroids
     [Serializable]
     public sealed class MOSpawnVisuals
     {
+        [Tooltip("One material for near, far, and debris of this Spawn Point. Overrides the shared unified material.")]
+        public Material unifiedAsteroidMaterialOverride;
         public Material rockMaterialOverride;
         public Material iceMaterialOverride;
         public Material distantMaterialOverride;
@@ -214,12 +207,6 @@ namespace MiningOperation.Asteroids
         [Range(0f, 4f)] public float rotationSpeedMultiplier = 1f;
         [Range(0f, 4f)] public float mineableRotationMultiplier = 1f;
         [Range(0f, 4f)] public float decorativeRotationMultiplier = 1f;
-
-        [Header("Art direction")]
-        public MOArtDirection artDirection = MOArtDirection.Default;
-        [Range(0f, 1f)] public float retroNoiseSuppression = .65f;
-        [Range(0f, 1f)] public float retroCraterReadability = .55f;
-        [Range(0f, 1f)] public float retroSilhouetteStrength = .60f;
 
         public void CopyFrom(AsteroidFieldSettings s)
         {
@@ -243,6 +230,7 @@ namespace MiningOperation.Asteroids
         public void ApplyTo(AsteroidFieldSettings s)
         {
             if (s == null) return;
+            if (unifiedAsteroidMaterialOverride != null) s.unifiedAsteroidMaterial = unifiedAsteroidMaterialOverride;
             if (rockMaterialOverride != null) s.asteroidMaterial = rockMaterialOverride;
             if (iceMaterialOverride != null) s.iceMaterial = iceMaterialOverride;
             if (distantMaterialOverride != null) s.distantMaterial = distantMaterialOverride;
@@ -263,56 +251,5 @@ namespace MiningOperation.Asteroids
             s.decorativeRotationMultiplier = Mathf.Clamp(decorativeRotationMultiplier, 0f, 4f);
         }
 
-        public void ApplyArtDirection(MiningFieldContent contentType, MOSpawnGeology geology)
-        {
-            if (geology == null || artDirection == MOArtDirection.Default || contentType == MiningFieldContent.Gas)
-                return;
-
-            float noise = Mathf.Clamp01(retroNoiseSuppression);
-            float crater = Mathf.Clamp01(retroCraterReadability);
-            float silhouette = Mathf.Clamp01(retroSilhouetteStrength);
-
-            switch (artDirection)
-            {
-                case MOArtDirection.RetroSciFi:
-                    geology.shapeIrregularity = Mathf.Lerp(geology.shapeIrregularity, .44f, silhouette * .85f);
-                    geology.surfaceRoughness = Mathf.Lerp(geology.surfaceRoughness, .12f, noise * .90f);
-                    geology.craterIntensity = Mathf.Lerp(geology.craterIntensity, .34f, crater * .75f);
-                    geology.minimumAxisScale = Mathf.Max(geology.minimumAxisScale, .64f);
-                    geology.minCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.minCraters, 1f, .8f)), 0, 20);
-                    geology.maxCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.maxCraters, 5f, .8f)), geology.minCraters, 60);
-                    break;
-                case MOArtDirection.RetroMonolith:
-                    geology.shapeIrregularity = Mathf.Lerp(geology.shapeIrregularity, .34f, silhouette);
-                    geology.surfaceRoughness = Mathf.Lerp(geology.surfaceRoughness, .08f, noise);
-                    geology.craterIntensity = Mathf.Lerp(geology.craterIntensity, .18f, crater * .55f);
-                    geology.minimumAxisScale = Mathf.Max(geology.minimumAxisScale, .74f);
-                    geology.minCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.minCraters, 0f, .9f)), 0, 20);
-                    geology.maxCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.maxCraters, 3f, .9f)), geology.minCraters, 60);
-                    break;
-                case MOArtDirection.RetroCratered:
-                    geology.shapeIrregularity = Mathf.Lerp(geology.shapeIrregularity, .40f, silhouette * .75f);
-                    geology.surfaceRoughness = Mathf.Lerp(geology.surfaceRoughness, .14f, noise * .9f);
-                    geology.craterIntensity = Mathf.Lerp(geology.craterIntensity, .42f, crater);
-                    geology.minimumAxisScale = Mathf.Max(geology.minimumAxisScale, .60f);
-                    geology.minCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.minCraters, 3f, .75f)), 0, 20);
-                    geology.maxCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.maxCraters, 8f, .75f)), geology.minCraters, 60);
-                    break;
-                case MOArtDirection.RetroStationReady:
-                    geology.shapeIrregularity = Mathf.Lerp(geology.shapeIrregularity, .37f, silhouette * .8f);
-                    geology.surfaceRoughness = Mathf.Lerp(geology.surfaceRoughness, .10f, noise);
-                    geology.craterIntensity = Mathf.Lerp(geology.craterIntensity, .24f, crater * .65f);
-                    geology.minimumAxisScale = Mathf.Max(geology.minimumAxisScale, .78f);
-                    geology.minCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.minCraters, 1f, .85f)), 0, 20);
-                    geology.maxCraters = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(geology.maxCraters, 4f, .85f)), geology.minCraters, 60);
-                    break;
-            }
-
-            geology.shapeIrregularity = Mathf.Clamp01(geology.shapeIrregularity);
-            geology.surfaceRoughness = Mathf.Clamp01(geology.surfaceRoughness);
-            geology.craterIntensity = Mathf.Clamp01(geology.craterIntensity);
-            geology.minimumAxisScale = Mathf.Clamp(geology.minimumAxisScale, .1f, 1f);
-            geology.maxCraters = Mathf.Clamp(geology.maxCraters, geology.minCraters, 60);
-        }
     }
 }

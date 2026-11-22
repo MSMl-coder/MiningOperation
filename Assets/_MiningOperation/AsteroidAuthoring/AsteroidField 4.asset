@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AsteroidField 4
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidFieldSettings
   asteroidSettings: {fileID: 11400000, guid: 4a4ffdd17bc0444dead6e46f491067ad, type: 2}
+  unifiedAsteroidMaterial: {fileID: 2100000, guid: 35fd55c65b2464f4a8c2c99a579a5d58, type: 2}
   asteroidMaterial: {fileID: 2100000, guid: 54f626fc1c1894fe98bc2d8e557530e5, type: 2}
   distantMaterial: {fileID: 2100000, guid: cbf41f4f39e614dbeb1657361b555b3c, type: 2}
   iceMaterial: {fileID: 2100000, guid: 330c476fd6a124bab8ff1e25ab4b08d7, type: 2}
@@ -24,9 +25,9 @@ MonoBehaviour:
   streamedMeshSubdivisions: 3
   cachedStreamedAsteroids: 12
   exactFarShape: 1
-  exactFarSubdivisions: 2
+  exactFarSubdivisions: 3
   exactFarBuildsPerFrame: 2
-  maxFarRenderDraws: 300
+  maxFarRenderDraws: 469
   farBuildBudgetMs: 2
   enableAsteroidRotation: 1
   rotationSpeedMultiplier: 1

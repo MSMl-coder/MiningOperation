@@ -252,8 +252,14 @@ namespace MiningOperation.Asteroids.Editor
             string name = Path.GetFileNameWithoutExtension(path);
             if (name.IndexOf("ResourceCatalog", StringComparison.OrdinalIgnoreCase) >= 0) return Kind.Catalog;
             if (name.IndexOf("AsteroidGenerator", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                name.IndexOf("IceGenerator", StringComparison.OrdinalIgnoreCase) >= 0) return Kind.Generator;
-            if (name.IndexOf("AsteroidField", StringComparison.OrdinalIgnoreCase) >= 0) return Kind.Field;
+                name.IndexOf("IceGenerator", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.EndsWith("_GeneratorSettings", StringComparison.OrdinalIgnoreCase) ||
+                name.IndexOf("_GeneratorSettings_", StringComparison.OrdinalIgnoreCase) >= 0)
+                return Kind.Generator;
+            if (name.IndexOf("AsteroidField", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.EndsWith("_FieldSettings", StringComparison.OrdinalIgnoreCase) ||
+                name.IndexOf("_FieldSettings_", StringComparison.OrdinalIgnoreCase) >= 0)
+                return Kind.Field;
             return Kind.Unknown;
         }
     }

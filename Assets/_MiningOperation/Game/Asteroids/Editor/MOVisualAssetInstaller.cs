@@ -14,54 +14,27 @@ namespace MiningOperation.Asteroids.Editor
         public static bool Install(AsteroidFieldSettings settings)
         {
             if (settings == null) return false;
-            Shader lit = Shader.Find("Universal Render Pipeline/Lit");
             Shader gas = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-            if (lit == null || !lit.isSupported || gas == null || !gas.isSupported)
+            if (gas == null || !gas.isSupported)
             {
                 EditorUtility.DisplayDialog("Unity URP needed",
-                    "Missing URP/Lit or URP/Particles/Unlit. Check that an active URP Pipeline Asset is assigned.", "OK");
+                    "Missing URP/Particles/Unlit. Check that an active URP Pipeline Asset is assigned.", "OK");
                 return false;
             }
             EnsureFolder();
-            string icePath = Root + "/MO_IceSurface_Seamless.png";
+            // Never overwrite a serialized asset that Unity cannot currently load.
+            // This typically means a broken MonoScript GUID; the user's data may be intact.
+            EnsureReadableAsset<Material>(Root + "/MO_GasSoftVolume_v233.mat");
+            EnsureReadableAsset<Material>(Root + "/MO_GasVolumeURP_v24.mat");
             string gasPath = Root + "/MO_GasSoftVolume_v233.png";
-            bool createdTextures = false;
-            if (!File.Exists(icePath))
-            {
-                WriteTexture(icePath, GenerateIceTexture(512));
-                createdTextures = true;
-            }
             if (!File.Exists(gasPath))
             {
                 WriteTexture(gasPath, GenerateGasSprite(512));
-                createdTextures = true;
+                AssetDatabase.Refresh();
             }
-            if (createdTextures) AssetDatabase.Refresh();
-            Import(icePath, true, false);
             Import(gasPath, false, true);
-            Texture2D iceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(icePath);
             Texture2D gasTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(gasPath);
-            if (iceTexture == null || gasTexture == null)
-                throw new InvalidOperationException("Failed to import ice/gas textures.");
-
-            string iceMaterialPath = Root + "/MO_Ice_URP.mat";
-            var iceMat = AssetDatabase.LoadAssetAtPath<Material>(iceMaterialPath);
-            bool createIceMaterial = iceMat == null;
-            if (createIceMaterial)
-            {
-                iceMat = new Material(lit);
-                AssetDatabase.CreateAsset(iceMat, iceMaterialPath);
-            }
-            if (createIceMaterial || iceMat.shader == null || !iceMat.shader.isSupported)
-            {
-                iceMat.shader = lit;
-                iceMat.enableInstancing = true;
-                iceMat.SetTexture("_BaseMap", iceTexture);
-                iceMat.SetColor("_BaseColor", new Color(.81f, .94f, 1f, 1f));
-                iceMat.SetFloat("_Metallic", 0f);
-                iceMat.SetFloat("_Smoothness", .31f);
-                EditorUtility.SetDirty(iceMat);
-            }
+            if (gasTexture == null) throw new InvalidOperationException("Failed to import gas texture.");
 
             string gasMaterialPath = Root + "/MO_GasSoftVolume_v233.mat";
             var gasMat = AssetDatabase.LoadAssetAtPath<Material>(gasMaterialPath);
@@ -115,11 +88,7 @@ namespace MiningOperation.Asteroids.Editor
                 }
             }
 
-            EnsureIceResources(settings);
-            Undo.RecordObject(settings, "Install ice and gas visuals");
-            // Preserve intentionally assigned custom URP-compatible materials.
-            if (settings.iceMaterial == null || settings.iceMaterial.shader == null ||
-                !settings.iceMaterial.shader.isSupported) settings.iceMaterial = iceMat;
+            Undo.RecordObject(settings, "Install gas visuals");
             // Upgrade only our previous generated default. Never replace user-authored materials.
             bool stockLegacy = settings.gasParticleMaterial != null &&
                 AssetDatabase.GetAssetPath(settings.gasParticleMaterial) == Root + "/MO_Gas_URP.mat";
@@ -132,6 +101,26 @@ namespace MiningOperation.Asteroids.Editor
             return true;
         }
 
+
+        public static bool InstallIceResources(AsteroidFieldSettings settings)
+        {
+            if (settings == null) return false;
+            EnsureFolder();
+            EnsureReadableAsset<AsteroidResourceCatalog>(Root + "/MO_IceResourceCatalog.asset");
+            EnsureReadableAsset<AsteroidGeneratorSettings>(Root + "/MO_IceGenerator.asset");
+            EnsureIceResources(settings);
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        private static void EnsureReadableAsset<T>(string path) where T : UnityEngine.Object
+        {
+            // AssetDatabase.LoadAssetAtPath may return null for a file that exists on disk
+            // when m_Script/MonoScript GUIDs are broken. Recreating it destroys saved data.
+            if (File.Exists(path) && AssetDatabase.LoadAssetAtPath<T>(path) == null)
+                throw new InvalidOperationException("Existing asset cannot be loaded: " + path +
+                    ". Do NOT regenerate it. Fix its script reference with the Settings Asset Repair tool first.");
+        }
 
         private static void EnsureIceResources(AsteroidFieldSettings field)
         {
@@ -170,6 +159,16 @@ namespace MiningOperation.Asteroids.Editor
                 generator.maximumPorosity = .19f;
                 AssetDatabase.CreateAsset(generator, generatorPath);
             }
+            if (generator != null && generator.catalog == null)
+            {
+                // Only repair the built-in generator's known catalog relationship;
+                // never guess a resource catalog for a custom generator asset.
+                if (AssetDatabase.GetAssetPath(generator) != generatorPath)
+                    throw new InvalidOperationException("Custom ice generator has no Resource Catalog. Assign the intended catalog manually.");
+                Undo.RecordObject(generator, "Restore default ice resource catalog reference");
+                generator.catalog = catalog;
+                EditorUtility.SetDirty(generator);
+            }
             field.iceGeneratorSettings = generator;
             EditorUtility.SetDirty(field);
         }
@@ -206,49 +205,6 @@ namespace MiningOperation.Asteroids.Editor
         {
             File.WriteAllBytes(path, t.EncodeToPNG());
             UnityEngine.Object.DestroyImmediate(t);
-        }
-
-        // Horizontal periodicity: texture U=0 and U=1 are identical, preventing UV seam.
-        private static float PeriodicNoise(float u, float v, float scale, float ox, float oy)
-        {
-            float a = Mathf.PerlinNoise(ox + u * scale, oy + v * scale);
-            float b = Mathf.PerlinNoise(ox + (u - 1f) * scale, oy + v * scale);
-            return Mathf.Lerp(a, b, u);
-        }
-
-        private static Texture2D GenerateIceTexture(int size)
-        {
-            var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color32[size * size];
-            const int faultCount = 24;
-            var faults = new Vector2[faultCount];
-            var seeded = new System.Random(34523);
-            for (int i = 0; i < faultCount; i++) faults[i] = new Vector2((float)seeded.NextDouble(), (float)seeded.NextDouble());
-            for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float u = (float)x / (size - 1), v = (float)y / (size - 1);
-                float baseTone = .68f * PeriodicNoise(u, v, 3.7f, 12f, 5f) +
-                    .25f * PeriodicNoise(u, v, 12f, 22f, 13f) +
-                    .07f * PeriodicNoise(u, v, 30f, 48f, 25f);
-                float first = 10f, second = 10f;
-                for (int i = 0; i < faultCount; i++)
-                {
-                    float dx = Mathf.Abs(u - faults[i].x);
-                    dx = Mathf.Min(dx, 1f - dx);
-                    float dy = (v - faults[i].y) * 0.82f;
-                    float d = dx * dx + dy * dy;
-                    if (d < first) { second = first; first = d; }
-                    else if (d < second) second = d;
-                }
-                float fracture = 1f - Mathf.SmoothStep(.0018f, .0065f, second - first);
-                float tone = Mathf.Clamp01(.63f + (baseTone - .5f) * .43f - fracture * .18f);
-                float blue = Mathf.Clamp01(tone * 1.05f + .03f);
-                pixels[y * size + x] = new Color(tone * .81f, tone * .95f, blue, 1f);
-            }
-            t.SetPixels32(pixels);
-            t.Apply();
-            return t;
         }
 
         private static Texture2D GenerateGasSprite(int size)

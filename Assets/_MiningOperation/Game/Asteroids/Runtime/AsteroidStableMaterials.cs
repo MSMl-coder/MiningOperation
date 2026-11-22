@@ -8,6 +8,9 @@ namespace MiningOperation.Asteroids
     /// </summary>
     public static class AsteroidStableMaterials
     {
+        public static bool IsUnified(Material material) => material != null && material.shader != null &&
+            material.shader.name == "Mining Operation/Asteroid Unified Surface";
+
         public static Material Create(Material requested, bool allowExperimental, Color color, string name,
             Texture2D rockAlbedo = null, Texture2D rockNormal = null, float normalStrength = 0.18f)
         {
@@ -15,7 +18,8 @@ namespace MiningOperation.Asteroids
             bool usableCustom = requested != null && requested.shader != null && requested.shader.isSupported &&
                 requested.shader.name != "Hidden/InternalErrorShader";
             Material result;
-            if (allowExperimental && usableCustom)
+            bool unified = usableCustom && requested.shader.name == "Mining Operation/Asteroid Unified Surface";
+            if (unified || (allowExperimental && usableCustom))
                 result = new Material(requested);
             else if (standard != null && standard.isSupported)
             {
@@ -39,6 +43,12 @@ namespace MiningOperation.Asteroids
             {
                 Debug.LogError("[MO] Missing compatible asteroid shader (URP pipeline not assigned?).");
                 return null;
+            }
+            if (unified)
+            {
+                // Shared authored settings are never modified; only the controller-owned clone.
+                result.SetFloat("_MO_LODVisibility", 1f);
+                result.SetFloat("_MO_ObjectRadius", 1f);
             }
             result.name = name;
             result.hideFlags = HideFlags.DontSave;
