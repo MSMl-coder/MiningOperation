@@ -53,6 +53,13 @@ namespace MiningOperation.Asteroids.Editor
                     EditorUtility.SetDirty(anchor);
                     if (anchor.gameObject.scene.IsValid())
                         EditorSceneManager.MarkSceneDirty(anchor.gameObject.scene);
+                    // Baked objects have persistent MeshRenderers. Changing a Spawn Point
+                    // material must update those renderers, not just the settings asset.
+                    if (anchor.Controller != null && anchor.Controller.BakedSceneRoot != null)
+                    {
+                        try { MOBakedMaterialSync.Apply(anchor, false); }
+                        catch (System.Exception ex) { Debug.LogException(ex, anchor); }
+                    }
                 }
                 Material active = anchor.visuals != null ? anchor.visuals.unifiedAsteroidMaterialOverride : null;
                 if (active == null && anchor.settings != null) active = anchor.settings.unifiedAsteroidMaterial;
@@ -68,6 +75,9 @@ namespace MiningOperation.Asteroids.Editor
                         try
                         {
                             Material copy = MOUnifiedAsteroidAssetTools.MakeLocal(anchor);
+                            anchor.Controller?.InvalidateLocalConfiguration();
+                            if (anchor.Controller != null && anchor.Controller.BakedSceneRoot != null)
+                                MOBakedMaterialSync.Apply(anchor, false);
                             if (anchor.gameObject.scene.IsValid())
                                 EditorSceneManager.MarkSceneDirty(anchor.gameObject.scene);
                             Selection.activeObject = copy;
@@ -75,7 +85,55 @@ namespace MiningOperation.Asteroids.Editor
                         catch (System.Exception ex) { Debug.LogException(ex, anchor); }
                     }
                 }
-                EditorGUILayout.HelpBox("Rock/ice presets, noise, crater and lighting values are edited only on the .mat asset. A shared material affects all its users.", MessageType.None);
+                if (GUILayout.Button("Assign Textured Rock / Ice Material", GUILayout.Height(24f)))
+                {
+                    if (EditorApplication.isPlayingOrWillChangePlaymode)
+                        EditorUtility.DisplayDialog("Edit Mode required", "Stop Play Mode before assigning materials.", "OK");
+                    else
+                    {
+                        try
+                        {
+                            string id = anchor.contentType == MiningFieldContent.Ice ||
+                                anchor.contentType == MiningFieldContent.IceShelf ? "ice.fractured" : "rock.cinematic_fractured";
+                            Material textured = MOTexturedMaterialLibrary.CreateOrReuse(MOTexturedMaterialLibrary.Find(id));
+                            Undo.RecordObject(anchor, "Assign textured asteroid material");
+                            if (anchor.visuals == null) anchor.visuals = new MOSpawnVisuals();
+                            anchor.visuals.unifiedAsteroidMaterialOverride = textured;
+                            EditorUtility.SetDirty(anchor);
+                            anchor.Controller?.InvalidateLocalConfiguration();
+                            if (anchor.Controller != null && anchor.Controller.BakedSceneRoot != null)
+                                MOBakedMaterialSync.Apply(anchor, false);
+                            if (anchor.gameObject.scene.IsValid())
+                                EditorSceneManager.MarkSceneDirty(anchor.gameObject.scene);
+                            Selection.activeObject = textured;
+                        }
+                        catch (System.Exception ex) { Debug.LogException(ex, anchor); }
+                    }
+                }
+                if (anchor.Controller != null && anchor.Controller.BakedSceneRoot != null)
+                {
+                    EditorGUILayout.Space(4f);
+                    EditorGUILayout.LabelField("BAKED FIELD MATERIAL", EditorStyles.boldLabel);
+                    if (GUILayout.Button("Apply Material to Baked Asteroids", GUILayout.Height(28f)))
+                    {
+                        try { MOBakedMaterialSync.Apply(anchor, false); }
+                        catch (System.Exception ex) { Debug.LogException(ex, anchor); }
+                    }
+                    if (GUILayout.Button("Force Replace All Baked LOD Materials", GUILayout.Height(24f)) &&
+                        EditorUtility.DisplayDialog("Replace all generated asteroid materials?",
+                            "This replaces material overrides on ALL generated asteroid LOD renderers, including protected asteroids. It does not change geometry, colliders, root Transforms, or custom child objects.",
+                            "Replace all", "Cancel"))
+                    {
+                        try { MOBakedMaterialSync.Apply(anchor, true); }
+                        catch (System.Exception ex) { Debug.LogException(ex, anchor); }
+                    }
+                    EditorGUILayout.HelpBox("Local Material Override syncs automatically to managed baked LOD renderers. Individually customized or protected asteroids are preserved; use Force Replace only when you want a full material reset.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("There is no baked field yet. The selected material will be assigned during the next Bake.", MessageType.None);
+                }
+                EditorGUILayout.HelpBox("Choose a texture-backed .mat and edit its albedo, normal and mask maps in the Material Inspector. Material data is not edited in Field Studio.", MessageType.None);
             }
             EditorGUILayout.Space(6f);
             if (GUILayout.Button("Open Environment Generator", GUILayout.Height(32f)))

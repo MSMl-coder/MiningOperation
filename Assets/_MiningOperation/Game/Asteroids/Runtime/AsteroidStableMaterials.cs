@@ -9,7 +9,8 @@ namespace MiningOperation.Asteroids
     public static class AsteroidStableMaterials
     {
         public static bool IsUnified(Material material) => material != null && material.shader != null &&
-            material.shader.name == "Mining Operation/Asteroid Unified Surface";
+            (material.shader.name == "Mining Operation/Asteroid Unified Surface" ||
+             material.shader.name == "Mining Operation/Asteroid Textured Surface");
 
         public static Material Create(Material requested, bool allowExperimental, Color color, string name,
             Texture2D rockAlbedo = null, Texture2D rockNormal = null, float normalStrength = 0.18f)
@@ -18,7 +19,7 @@ namespace MiningOperation.Asteroids
             bool usableCustom = requested != null && requested.shader != null && requested.shader.isSupported &&
                 requested.shader.name != "Hidden/InternalErrorShader";
             Material result;
-            bool unified = usableCustom && requested.shader.name == "Mining Operation/Asteroid Unified Surface";
+            bool unified = usableCustom && IsUnified(requested);
             if (unified || (allowExperimental && usableCustom))
                 result = new Material(requested);
             else if (standard != null && standard.isSupported)

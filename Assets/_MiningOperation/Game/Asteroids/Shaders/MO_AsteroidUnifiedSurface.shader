@@ -28,7 +28,7 @@ Shader "Mining Operation/Asteroid Unified Surface"
         _CraterColorStrength ("Crater color strength", Range(0, 1)) = 0.28
         _CraterNormalStrength ("Crater normal strength", Range(0, 2)) = 0.75
         _CraterRoughnessStrength ("Crater roughness influence", Range(0, 1)) = 0.25
-        [Header(Rock fracture / layered stone)]
+        [Header(Rock_Fracture_Layered_Stone)]
         _RockStructureStrength ("Fractured rock amount", Range(0,1)) = 0
         _RockFractureFrequency ("Fracture scale", Range(0.4,10)) = 3.0
         _RockFractureWidth ("Crevice width", Range(0.008,0.28)) = 0.075

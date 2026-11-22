@@ -344,6 +344,11 @@ namespace MiningOperation.Asteroids.Editor
             if (IsBuilding) { EditorUtility.DisplayDialog("Generator busy", "Finish or cancel the current build first.", "OK"); return false; }
             AsteroidFieldController controller = anchor.Controller;
             if (controller == null) return false;
+            if (controller.BakedSceneMode)
+            {
+                EditorUtility.DisplayDialog("Baked field", "This field is baked to editable scene objects. Use Bake / Rebake to choose whether edited asteroids should be preserved, their meshes updated, or the entire layout rebuilt.", "OK");
+                return false;
+            }
             if (controller.Snapshot != null && !EditorUtility.DisplayDialog("Rebuild asteroid field?",
                 "This REPLACES the saved asteroid records for '" + anchor.name + "', " +
                 "including its mined resource state. Make a scene backup first if needed.",

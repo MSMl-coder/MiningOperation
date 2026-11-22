@@ -22,6 +22,7 @@ namespace MiningOperation.Asteroids
         private Camera previewCamera;
         private GameObject previewModel;
         private Mesh previewMesh;
+        private bool previewOwnsMesh;
         private RenderTexture previewTexture;
         private Texture2D ring;
         private float rotation;
@@ -42,8 +43,9 @@ namespace MiningOperation.Asteroids
                     var filter = previewModel.GetComponent<MeshFilter>();
                     if (filter != null) filter.sharedMesh = null;
                 }
-                AsteroidGeneration.DestroyTemporary(previewMesh);
+                if (previewOwnsMesh) AsteroidGeneration.DestroyTemporary(previewMesh);
                 previewMesh = null;
+                previewOwnsMesh = false;
             }
         }
 
@@ -163,7 +165,7 @@ namespace MiningOperation.Asteroids
                 foreach (var record in snapshot.asteroids)
                 {
                     if (record?.asteroid == null || record.asteroid.remainingMassKg <= 0d) continue;
-                    Vector3 center = field.transform.TransformPoint(record.localPosition);
+                    Vector3 center = field.GetRecordWorldPosition(record);
                     float radius = Mathf.Max(1f, record.asteroid.diameterMeters * 0.57f);
                     if (!RaySphere(ray, center, radius, out float t) || t > nearest) continue;
                     nearest = t;
@@ -203,12 +205,28 @@ namespace MiningOperation.Asteroids
                     seed = rock.seed, generatorVersion = rock.generatorVersion,
                     diameterMeters = rock.diameterMeters, geometryProfile = rock.geometryProfile
                 };
-                previewMesh = AsteroidGeometryGenerator.Generate(geometry,
-                    field.Settings.asteroidSettings, 3);
-                previewMesh.hideFlags = HideFlags.DontSave;
+                // Baked scene rocks already have persistent meshes; never regenerate or
+                // destroy a Mesh asset merely to display the focus preview.
+                var baked = field.FindBakedAsteroid(rock.asteroidId);
+                var bakedVisual = baked != null ? baked.transform.Find("__MO_BakedVisuals") : null;
+                var bakedFilter = bakedVisual != null ? bakedVisual.GetComponent<MeshFilter>() : null;
+                if (bakedFilter != null && bakedFilter.sharedMesh != null)
+                {
+                    previewMesh = bakedFilter.sharedMesh;
+                    previewOwnsMesh = false;
+                }
+                else
+                {
+                    previewMesh = AsteroidGeometryGenerator.Generate(geometry,
+                        field.Settings.asteroidSettings, 3);
+                    previewMesh.hideFlags = HideFlags.DontSave;
+                    previewOwnsMesh = true;
+                }
                 previewModel.GetComponent<MeshFilter>().sharedMesh = previewMesh;
-                previewModel.GetComponent<MeshRenderer>().sharedMaterial =
-                    field.RuntimeAsteroidMaterial != null ? field.RuntimeAsteroidMaterial : field.Settings.asteroidMaterial;
+                var bakedRenderer = bakedVisual != null ? bakedVisual.GetComponent<MeshRenderer>() : null;
+                previewModel.GetComponent<MeshRenderer>().sharedMaterial = bakedRenderer != null && bakedRenderer.sharedMaterial != null
+                    ? bakedRenderer.sharedMaterial
+                    : (field.RuntimeAsteroidMaterial != null ? field.RuntimeAsteroidMaterial : field.Settings.asteroidMaterial);
                 previewModel.transform.localScale = Vector3.one / Mathf.Max(1f, rock.diameterMeters);
             }
             catch (Exception ex)

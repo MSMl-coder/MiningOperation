@@ -103,6 +103,12 @@ namespace MiningOperation.Asteroids
         [Min(1f)] public float maximumDiameterMeters = 500f;
         [Range(0f, 1f)] public float smallAsteroidBias = 0.72f;
 
+        [Header("Editable Bake (Editor only)")]
+        [Tooltip("Generate a MeshCollider on each persistent asteroid root. Can be edited individually afterwards.")]
+        public bool bakedMeshColliders = true;
+        [Range(1, 5)] public int bakedLODCount = 4;
+        public MOBakeRebuildMode bakedRebuildMode = MOBakeRebuildMode.PreserveEdited;
+
         // Editor-only authoring metadata. Does not enter asteroid field JSON saves.
         [SerializeField, HideInInspector] private string lastBuildSignature;
         public string LastBuildSignature
@@ -270,8 +276,13 @@ namespace MiningOperation.Asteroids
             if (!string.IsNullOrWhiteSpace(fieldId)) controller.FieldId = fieldId;
             controller.FieldSeed = fieldSeed;
             bool isGas = contentType == MiningFieldContent.Gas;
-            controller.GenerateOnStart = !isGas;
-            controller.RuntimeStreaming = !isGas;
+            // Once baked, the saved scene objects, not runtime procedural rendering,
+            // are the source of visuals. Do not silently reactivate streaming on reload.
+            if (!controller.BakedSceneMode)
+            {
+                controller.GenerateOnStart = !isGas;
+                controller.RuntimeStreaming = !isGas;
+            }
             // An existing saved asteroid snapshot remains untouched when switching content modes.
             controller.enabled = !isGas;
             var gas = GetComponent<MOGasFieldRenderer>();

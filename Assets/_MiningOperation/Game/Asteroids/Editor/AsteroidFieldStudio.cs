@@ -204,7 +204,7 @@ namespace MiningOperation.Asteroids.Editor
             if (selected == null)
             {
                 EditorGUILayout.Space(20);
-                EditorGUILayout.HelpBox("Choose a location on the left, or create a new Spawn Point. All generation, materials and previews are controlled here.", MessageType.Info);
+                EditorGUILayout.HelpBox("Choose a Spawn Point or create one. Generation and previews are controlled here; materials are edited in their own Material Inspector.", MessageType.Info);
                 return;
             }
             if (field != selected.settings)
@@ -442,7 +442,18 @@ namespace MiningOperation.Asteroids.Editor
                 Prop(so, prefix + "minimumAxisScale", "Axis variation");
             }
 
+            Header("Baked editable asteroids — this spawn");
+            Prop(so, "bakedLODCount", "Baked mesh LOD levels");
+            Prop(so, "bakedMeshColliders", "Create mesh colliders");
+            Prop(so, "bakedRebuildMode", "Rebake mode");
+            bool isBaked = selected.Controller != null && selected.Controller.BakedSceneMode;
+            EditorGUILayout.HelpBox(isBaked
+                ? "BAKED: every mineable asteroid is a real GameObject with persistent Mesh assets. Runtime procedural rendering and decorative debris are OFF. Select Preserve Edited, Update Geometry or Rebuild Entire Field, then click BAKE / REBAKE below."
+                : "Bake creates persistent editable scene GameObjects. Existing gameplay field records are used unless you choose Rebuild Entire Field. Decorative debris is never included.", MessageType.Info);
+
             Header("LOD & rendering — this spawn");
+            if (isBaked)
+                EditorGUILayout.HelpBox("The streaming controls below are used only by procedural mode. Baking uses the LOD levels above and does not render GPU far field.", MessageType.None);
             Prop(so, "quality.useGpuFarField", "GPU far rendering");
             Prop(so, "quality.exactFarShape", "Preserve exact silhouettes");
             Prop(so, "quality.exactFarSubdivisions", "Far detail (LOD)");
@@ -519,8 +530,18 @@ namespace MiningOperation.Asteroids.Editor
                 // Material authoring is intentionally NOT part of Field Studio.
                 // Select the .mat asset in the Project/Spawn Point inspector to
                 // choose a rock/ice library preset and edit shader layers.
-                Header("Debris & motion — this spawn");
-                Prop(local, "visuals.enableDecorativeDebris", "Decorative debris");
+                bool isBaked = selected.Controller != null && selected.Controller.BakedSceneMode;
+                if (isBaked)
+                {
+                    Header("Runtime debris — baked field");
+                    EditorGUILayout.HelpBox(
+                        "Main asteroids remain editable scene GameObjects. Decorative fragments are " +
+                        "GPU-instanced only in Play Mode; they are not baked, saved, mined or given colliders. " +
+                        "Their positions are regenerated deterministically from the field snapshot.",
+                        MessageType.Info);
+                }
+                else Header("Debris & motion — this spawn");
+                Prop(local, "visuals.enableDecorativeDebris", "Decorative debris at runtime");
                 if (local.FindProperty("visuals.enableDecorativeDebris").boolValue)
                 {
                     Prop(local, "visuals.decorativeRockCount", "Debris count");
@@ -534,11 +555,13 @@ namespace MiningOperation.Asteroids.Editor
                         Prop(local, "visuals.debrisMeshVariants", "Debris variants");
                     }
                 }
-                Prop(local, "visuals.enableAsteroidRotation", "Asteroid rotation");
+                Prop(local, "visuals.enableAsteroidRotation",
+                    isBaked ? "Animate debris spin" : "Asteroid rotation");
                 if (local.FindProperty("visuals.enableAsteroidRotation").boolValue)
                 {
                     Prop(local, "visuals.rotationSpeedMultiplier", "Master speed");
-                    Prop(local, "visuals.mineableRotationMultiplier", "Mineable speed");
+                    if (!isBaked)
+                        Prop(local, "visuals.mineableRotationMultiplier", "Mineable speed");
                     Prop(local, "visuals.decorativeRotationMultiplier", "Debris speed");
                 }
             }
@@ -731,10 +754,35 @@ namespace MiningOperation.Asteroids.Editor
                 {
                     var controller = selected.Controller;
                     bool built = controller != null && controller.Snapshot != null;
-                    status = !built ? "NOT BUILT" :
-                        AsteroidAuthoringWorkflow.IsOutdated(selected) ? "CHANGES NOT BUILT" : "UP TO DATE";
+                    status = controller != null && controller.BakedSceneMode
+                        ? "BAKED · " + (controller.Snapshot != null && controller.Snapshot.asteroids != null
+                            ? controller.Snapshot.asteroids.Count.ToString() : "0") + " records"
+                        : !built ? "NOT BUILT" :
+                            AsteroidAuthoringWorkflow.IsOutdated(selected) ? "CHANGES NOT BUILT" : "UP TO DATE";
                 }
                 GUILayout.Label(status, EditorStyles.miniLabel);
+                if (selected.contentType != MiningFieldContent.Gas)
+                {
+                    GUILayout.Space(5f);
+                    EditorGUI.BeginChangeCheck();
+                    var mode = (MOBakeRebuildMode)EditorGUILayout.EnumPopup(
+                        selected.bakedRebuildMode, GUILayout.Width(130f));
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(selected, "Change asteroid bake mode");
+                        selected.bakedRebuildMode = mode;
+                        EditorUtility.SetDirty(selected);
+                        EditorSceneManager.MarkSceneDirty(selected.gameObject.scene);
+                    }
+                    if (GUILayout.Button("BAKE / REBAKE", EditorStyles.toolbarButton, GUILayout.Width(125f)))
+                    {
+                        var toBake = selected;
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (toBake != null) MOBakedFieldBaker.BakeSelected(toBake);
+                        };
+                    }
+                }
                 GUILayout.FlexibleSpace();
                 if (AsteroidAuthoringWorkflow.IsBuilding)
                 {
@@ -743,9 +791,13 @@ namespace MiningOperation.Asteroids.Editor
                 }
                 else using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
                 {
-                    if (GUILayout.Button(selected.contentType == MiningFieldContent.Gas ?
-                        "BUILD CLOUD VISUALS" : "BUILD / REBUILD  ·  Save to Scene",
-                        EditorStyles.toolbarButton, GUILayout.Width(220f))) BuildSelected();
+                    using (new EditorGUI.DisabledScope(selected.contentType != MiningFieldContent.Gas &&
+                        selected.Controller != null && selected.Controller.BakedSceneMode))
+                    {
+                        if (GUILayout.Button(selected.contentType == MiningFieldContent.Gas ?
+                            "BUILD CLOUD VISUALS" : "BUILD RECORDS",
+                            EditorStyles.toolbarButton, GUILayout.Width(125f))) BuildSelected();
+                    }
                 }
             }
         }

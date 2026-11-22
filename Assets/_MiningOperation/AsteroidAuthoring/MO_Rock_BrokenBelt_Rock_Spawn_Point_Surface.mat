@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: MO_Rock_BrokenBelt_Rock_Spawn_Point_Surface
+  m_Shader: {fileID: 4800000, guid: 73a133c0f73053eda13fc54206f6ed59, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    MO_SurfacePreset: rock.granite
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _AmbientFill: 0.38
+    - _CavityContrast: 1.25
+    - _CavityRoughnessStrength: 0.2
+    - _CavityStrength: 0.38
+    - _CraterColorStrength: 0.4
+    - _CraterDensity: 0.28
+    - _CraterDepth: 0.38
+    - _CraterFrequency: 1.35
+    - _CraterMode: 2
+    - _CraterNormalStrength: 0.4
+    - _CraterRadius: 0.9
+    - _CraterRimHeight: 0.12
+    - _CraterRimSharpness: 4.5
+    - _CraterRoughnessStrength: 0.17
+    - _CraterSecondary: 0.1
+    - _DarkSideFill: 0.22
+    - _DetailFrequency: 12
+    - _DetailNormalStrength: 0.14
+    - _DetailStrength: 0.13
+    - _IceBlend: 0
+    - _IceCrackStrength: 0
+    - _LightWrap: 0.33
+    - _MO_LODVisibility: 1
+    - _MO_ObjectRadius: 1
+    - _MO_SurfaceSeed: 0
+    - _MacroContrast: 1.1
+    - _MacroFrequency: 1.55
+    - _MacroNormalStrength: 0.26
+    - _MacroOctaves: 3
+    - _MacroStrength: 0.28
+    - _MacroWarp: 0.1
+    - _Metallic: 0
+    - _MicroNoiseType: 0
+    - _MicroRoughnessStrength: 0.18
+    - _NoiseMode: 0
+    - _RimPower: 2.5
+    - _RimStrength: 0.005
+    - _RockCrackDarkness: 0.7
+    - _RockExposure: 1
+    - _RockFacetContrast: 0.4
+    - _RockFractureFrequency: 3
+    - _RockFractureWarp: 0.18
+    - _RockFractureWidth: 0.075
+    - _RockHeightStrength: 0.8
+    - _RockStructureStrength: 0
+    - _Smoothness: 0.055
+    - _StrataFrequency: 3
+    - _StrataStrength: 0.08
+    m_Colors:
+    - _CavityColor: {r: 0.20392157, g: 0.21176471, b: 0.22745098, a: 1}
+    - _IceBase: {r: 0.7176471, g: 0.8156863, b: 0.85490197, a: 1}
+    - _IceSecondary: {r: 0.38431373, g: 0.53333336, b: 0.6, a: 1}
+    - _RimTint: {r: 0.6392157, g: 0.6666667, b: 0.6901961, a: 1}
+    - _RockBase: {r: 0.5529412, g: 0.5137255, b: 0.4627451, a: 1}
+    - _RockSecondary: {r: 0.36078432, g: 0.34901962, b: 0.34509805, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -20,6 +20,9 @@ namespace MiningOperation.Asteroids
         [SerializeField] private bool runtimeStreaming = true;
         [SerializeField] private bool displayGizmos = true;
         [SerializeField] private AsteroidFieldSnapshot snapshot;
+        [NonSerialized] private Dictionary<string, AsteroidFieldRecord> recordsById;
+        [SerializeField, HideInInspector] private bool bakedSceneMode;
+        [SerializeField, HideInInspector] private MOBakedFieldRoot bakedSceneRoot;
 
         private readonly Dictionary<int, AsteroidInstance> active = new Dictionary<int, AsteroidInstance>();
         private readonly Dictionary<int, AsteroidInstance> inactiveCache = new Dictionary<int, AsteroidInstance>();
@@ -27,7 +30,69 @@ namespace MiningOperation.Asteroids
         private readonly Dictionary<int, LinkedListNode<int>> cacheNodes =
             new Dictionary<int, LinkedListNode<int>>();
         private Material runtimeNearMaterial;
+        private bool runtimeStarted;
         public int CachedAsteroidCount => inactiveCache.Count;
+        public bool BakedSceneMode => bakedSceneMode;
+        public MOBakedFieldRoot BakedSceneRoot => bakedSceneRoot;
+
+        /// <summary>Called only by the Editor baker. Does not modify or regenerate records.</summary>
+        public void SetBakedScene(MOBakedFieldRoot root)
+        {
+            bakedSceneRoot = root;
+            bakedSceneMode = root != null;
+            if (bakedSceneMode)
+            {
+                generateOnStart = false;
+                runtimeStreaming = false;
+                ReindexChildren();
+            }
+        }
+
+        public MOBakedAsteroid FindBakedAsteroid(string asteroidId)
+        {
+            if (!bakedSceneMode || bakedSceneRoot == null || string.IsNullOrEmpty(asteroidId)) return null;
+            return bakedSceneRoot.FindAsteroid(asteroidId);
+        }
+
+        public Vector3 GetRecordWorldPosition(AsteroidFieldRecord record)
+        {
+            if (record == null) return transform.position;
+            var baked = record.asteroid == null ? null : FindBakedAsteroid(record.asteroid.asteroidId);
+            return baked != null ? baked.transform.position : transform.TransformPoint(record.localPosition);
+        }
+
+        /// <summary>Writes edited scene transforms into the authoritative snapshot.</summary>
+        public void SyncBakedSceneToSnapshot()
+        {
+            if (!bakedSceneMode || bakedSceneRoot == null || snapshot?.asteroids == null) return;
+            var records = new Dictionary<string, AsteroidFieldRecord>(StringComparer.Ordinal);
+            foreach (var rec in snapshot.asteroids)
+                if (rec?.asteroid != null && !string.IsNullOrEmpty(rec.asteroid.asteroidId))
+                    records[rec.asteroid.asteroidId] = rec;
+            foreach (var body in bakedSceneRoot.GetComponentsInChildren<MOBakedAsteroid>(true))
+            {
+                if (body == null || body.FieldController != this ||
+                    !records.TryGetValue(body.AsteroidId, out var rec)) continue;
+                rec.localPosition = transform.InverseTransformPoint(body.transform.position);
+                rec.localRotation = Quaternion.Inverse(transform.rotation) * body.transform.rotation;
+            }
+        }
+
+        /// <summary>Applies saved runtime positions to baked scene objects, matched by persistent ID.</summary>
+        public void SyncSnapshotToBakedScene()
+        {
+            if (!bakedSceneMode || bakedSceneRoot == null || snapshot?.asteroids == null) return;
+            var records = new Dictionary<string, AsteroidFieldRecord>(StringComparer.Ordinal);
+            foreach (var rec in snapshot.asteroids)
+                if (rec?.asteroid != null && !string.IsNullOrEmpty(rec.asteroid.asteroidId))
+                    records[rec.asteroid.asteroidId] = rec;
+            foreach (var body in bakedSceneRoot.GetComponentsInChildren<MOBakedAsteroid>(true))
+            {
+                if (body == null || body.FieldController != this ||
+                    !records.TryGetValue(body.AsteroidId, out var rec)) continue;
+                body.transform.SetPositionAndRotation(transform.TransformPoint(rec.localPosition), transform.rotation * rec.localRotation);
+            }
+        }
         public Material RuntimeAsteroidMaterial => GetRuntimeNearMaterial();
         private Material GetRuntimeNearMaterial()
         {
@@ -46,6 +111,7 @@ namespace MiningOperation.Asteroids
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockNormalTexture,
                     ActiveSettings.rockNormalStrength);
             if (AsteroidStableMaterials.IsUnified(runtimeNearMaterial) &&
+                runtimeNearMaterial.HasProperty("_IceBlend") &&
                 string.IsNullOrEmpty(runtimeNearMaterial.GetTag("MO_SurfacePreset", false, "")))
             {
                 // Legacy untagged shared materials historically derive rock/ice mode
@@ -137,13 +203,32 @@ namespace MiningOperation.Asteroids
 
         private void OnEnable()
         {
+            recordsById = null;
             ReindexChildren();
-            if (Application.isPlaying) EnsureLocalSettings();
+            if (Application.isPlaying)
+            {
+                EnsureLocalSettings();
+                // Start is called only once by Unity; re-enabling an already started
+                // baked field must recreate its disposable runtime-only debris.
+                if (bakedSceneMode && runtimeStarted) InitializeBakedDecorativeDebris();
+            }
+            else if (bakedSceneMode) SyncBakedSceneToSnapshot();
         }
 
         private void Start()
         {
             if (!Application.isPlaying) return;
+            runtimeStarted = true;
+            if (bakedSceneMode)
+            {
+                // Baked mineable asteroids are persistent scene GameObjects: never regenerate
+                // their meshes, replace them, or start the normal near/far streaming path.
+                // Only the non-mineable decorative fragments are created at runtime.
+                EnsureLocalSettings();
+                SyncBakedSceneToSnapshot(); // Respect positions manually authored in the scene.
+                InitializeBakedDecorativeDebris();
+                return;
+            }
             EnsureLocalSettings();
             // Scenes authored with v1.2 may contain hundreds of persisted child GameObjects.
             // Remove the transient graphics in play mode; retain their authoritative records.
@@ -156,7 +241,15 @@ namespace MiningOperation.Asteroids
 
         private void LateUpdate()
         {
-            if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null) return;
+            if (!Application.isPlaying || IsBuilding || snapshot == null || ActiveSettings == null) return;
+            if (bakedSceneMode)
+            {
+                // The geometry is already baked, but decorative debris is runtime-only.
+                // Never create a GameObject for a fragment or run the asteroid streamer.
+                debrisRenderer?.Render();
+                return;
+            }
+            if (!runtimeStreaming) return;
             if (ActiveSettings != null && ActiveSettings.enableAsteroidRotation)
             {
                 foreach (var pair in active)
@@ -203,13 +296,62 @@ namespace MiningOperation.Asteroids
             ReleaseLocalSettings();
         }
 
+        // Runtime-only visual debris is intentionally independent of the far-asteroid
+        // renderer and of runtimeStreaming. This is also valid for editable baked fields.
+        private void InitializeBakedDecorativeDebris()
+        {
+            debrisRenderer?.Dispose();
+            debrisRenderer = null;
+            if (!Application.isPlaying || !bakedSceneMode) return;
+            EnsureLocalSettings();
+            if (!CanDrawDecorativeDebris(ActiveSettings, snapshot)) return;
+
+            // Use the very same near material as the baked rock/ice visual. Each
+            // renderer consumes shared Mesh assets or small transient debris meshes.
+            // The debris never enters the baked scene or the save snapshot.
+            debrisRenderer = new AsteroidDebrisRenderer(transform, ActiveSettings, GetRuntimeNearMaterial());
+            try
+            {
+                debrisRenderer.Initialize(snapshot);
+                nextStreamingTick = 0f;
+                RefreshRuntimeDebris();
+            }
+            catch (Exception exception)
+            {
+                // Decorative visuals must never prevent baked mineable asteroids from loading.
+                Debug.LogWarning("[MO] Baked field decorative debris could not be initialized for '" +
+                    fieldId + "'. Main baked asteroids remain active. " + exception, this);
+                debrisRenderer.Dispose();
+                debrisRenderer = null;
+            }
+        }
+
+        private static bool CanDrawDecorativeDebris(AsteroidFieldSettings fieldSettings,
+            AsteroidFieldSnapshot fieldSnapshot)
+        {
+            return fieldSettings != null && fieldSnapshot?.asteroids != null &&
+                fieldSnapshot.asteroids.Count > 0 && fieldSettings.enableDecorativeDebris &&
+                ((long)fieldSettings.decorativeRockCount + fieldSettings.microFragmentCount) > 0;
+        }
+
+        private void RefreshRuntimeDebris()
+        {
+            if (debrisRenderer == null || snapshot == null) return;
+            Transform focus = viewer != null ? viewer :
+                (Camera.main != null ? Camera.main.transform : null);
+            if (focus == null) return;
+            Camera camera = focus.GetComponent<Camera>();
+            if (camera == null) camera = Camera.main;
+            debrisRenderer.Refresh(focus.position, camera, snapshot.simulationSeconds);
+        }
+
         private void InitializeFarRendering()
         {
             farRenderer?.Dispose();
             farRenderer = null;
             debrisRenderer?.Dispose();
             debrisRenderer = null;
-            if (!Application.isPlaying || !runtimeStreaming || snapshot == null ||
+            if (!Application.isPlaying || bakedSceneMode || !runtimeStreaming || snapshot == null ||
                 ActiveSettings == null || !ActiveSettings.useGpuFarField) return;
             if (ActiveSettings.asteroidSettings == null)
             {
@@ -223,8 +365,7 @@ namespace MiningOperation.Asteroids
             Material sharedSurface = GetRuntimeNearMaterial();
             farRenderer = new AsteroidFieldFarRenderer(transform, ActiveSettings, sharedSurface);
             farRenderer.Initialize(snapshot);
-            if (ActiveSettings.enableDecorativeDebris &&
-                ActiveSettings.decorativeRockCount + ActiveSettings.microFragmentCount > 0)
+            if (CanDrawDecorativeDebris(ActiveSettings, snapshot))
             {
                 debrisRenderer = new AsteroidDebrisRenderer(transform, ActiveSettings, sharedSurface);
                 debrisRenderer.Initialize(snapshot);
@@ -255,7 +396,18 @@ namespace MiningOperation.Asteroids
 
         private void Update()
         {
-            if (!Application.isPlaying || !runtimeStreaming || IsBuilding || snapshot == null || ActiveSettings == null) return;
+            if (!Application.isPlaying || IsBuilding || snapshot == null || ActiveSettings == null) return;
+            if (bakedSceneMode)
+            {
+                snapshot.simulationSeconds += Math.Max(0d, (double)Time.deltaTime);
+                if (debrisRenderer != null && Time.time >= nextStreamingTick)
+                {
+                    nextStreamingTick = Time.time + Mathf.Max(0.1f, ActiveSettings.streamingTickSeconds);
+                    RefreshRuntimeDebris();
+                }
+                return;
+            }
+            if (!runtimeStreaming) return;
             if (ActiveSettings.enableAsteroidRotation)
                 snapshot.simulationSeconds += Math.Max(0d, (double)Time.deltaTime);
             // Avoid expensive scans on every render frame in dense fields.
@@ -266,8 +418,10 @@ namespace MiningOperation.Asteroids
             StreamAround(focus.position, ActiveSettings.instantiatePerFrame);
         }
 
-        public void BeginBuild()
+        public void BeginBuild(bool explicitlyRebuildBakedField = false)
         {
+            if (bakedSceneMode && !explicitlyRebuildBakedField)
+                throw new InvalidOperationException("This field is baked to editable scene objects. Use BAKE / REBAKE and choose Rebuild Entire Field to regenerate its authoritative records.");
             EnsureLocalSettings();
             if (ActiveSettings == null) throw new InvalidOperationException("Missing Field Settings.");
             ActiveSettings.ValidateOrThrow();
@@ -333,6 +487,7 @@ namespace MiningOperation.Asteroids
             AsteroidFieldSaveUtility.Validate(building);
             ClearSpawned();
             snapshot = building;
+            recordsById = null;
             if (runtimeNearMaterial != null)
             {
                 AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
@@ -359,9 +514,12 @@ namespace MiningOperation.Asteroids
 
         public void ClearField()
         {
+            if (bakedSceneMode)
+                throw new InvalidOperationException("Baked field records cannot be cleared independently of editable scene objects. Use a confirmed full rebake after making a backup.");
             CancelBuild();
             ClearSpawned();
             snapshot = null;
+            recordsById = null;
             farRenderer?.Dispose();
             farRenderer = null;
             debrisRenderer?.Dispose();
@@ -593,10 +751,16 @@ namespace MiningOperation.Asteroids
 
         public AsteroidFieldRecord FindRecordById(string asteroidId)
         {
-            if (snapshot == null || string.IsNullOrEmpty(asteroidId)) return null;
-            foreach (var entry in snapshot.asteroids)
-                if (entry.asteroid != null && entry.asteroid.asteroidId == asteroidId) return entry;
-            return null;
+            if (snapshot?.asteroids == null || string.IsNullOrEmpty(asteroidId)) return null;
+            if (recordsById == null)
+            {
+                recordsById = new Dictionary<string, AsteroidFieldRecord>(StringComparer.Ordinal);
+                foreach (var entry in snapshot.asteroids)
+                    if (entry?.asteroid != null && !string.IsNullOrEmpty(entry.asteroid.asteroidId))
+                        recordsById[entry.asteroid.asteroidId] = entry;
+            }
+            recordsById.TryGetValue(asteroidId, out var record);
+            return record;
         }
 
         private Vector3 WorldPosition(AsteroidFieldRecord record) { return transform.TransformPoint(record.localPosition); }
@@ -669,6 +833,7 @@ namespace MiningOperation.Asteroids
         {
             if (IsBuilding) throw new InvalidOperationException("Cannot save a partially built field.");
             if (snapshot == null) throw new InvalidOperationException("Field has no generated snapshot.");
+            SyncBakedSceneToSnapshot();
             foreach (var pair in active)
             {
                 var record = FindRecord(pair.Key);
@@ -685,6 +850,7 @@ namespace MiningOperation.Asteroids
             CancelBuild();
             ClearSpawned();
             snapshot = loaded;
+            recordsById = null;
             if (runtimeNearMaterial != null)
             {
                 AsteroidGeneration.DestroyTemporary(runtimeNearMaterial);
@@ -699,7 +865,14 @@ namespace MiningOperation.Asteroids
                 anchor.fieldSeed = loaded.fieldSeed;
                 anchor.contentType = loaded.contentType;
             }
-            InitializeFarRendering();
+            if (bakedSceneMode)
+            {
+                SyncSnapshotToBakedScene();
+                // Save loading can change the saved asteroid positions. Re-create only
+                // ephemeral debris placement; persistent baked meshes stay untouched.
+                if (Application.isPlaying) InitializeBakedDecorativeDebris();
+            }
+            else InitializeFarRendering();
         }
 
         private void OnDrawGizmosSelected()
