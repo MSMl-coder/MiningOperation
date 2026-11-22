@@ -138,7 +138,8 @@ namespace MiningOperation.Asteroids.Editor
                 material = source != null && source.shader == shader ? new Material(source) : new Material(shader);
                 if (AsteroidStableMaterials.IsUnified(material))
                 {
-                    material.SetFloat("_IceBlend", ice ? 1f : 0f);
+                    if (string.IsNullOrEmpty(material.GetTag("MO_SurfacePreset", false, "")))
+                        material.SetFloat("_IceBlend", ice ? 1f : 0f);
                     material.SetFloat("_MO_ObjectRadius", .9f); // preview geometry diameter = 1.8m
                     material.SetFloat("_MO_SurfaceSeed", (unchecked((uint)seed) & 65535u) / 65535f);
                     material.SetFloat("_MO_LODVisibility", 1f);

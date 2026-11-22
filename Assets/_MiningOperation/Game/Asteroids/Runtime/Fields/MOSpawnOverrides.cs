@@ -39,6 +39,7 @@ namespace MiningOperation.Asteroids
     [Serializable]
     public sealed class MOSpawnGeology
     {
+        public MOAsteroidShapePreset shapePreset = MOAsteroidShapePreset.Mixed;
         [Range(0f, 1f)] public float shapeIrregularity = .55f;
         [Range(0f, 1f)] public float craterIntensity = .55f;
         [Range(0f, 1f)] public float surfaceRoughness = .45f;
@@ -51,6 +52,7 @@ namespace MiningOperation.Asteroids
             return new MOSpawnGeology
             {
                 shapeIrregularity = shapeIrregularity,
+                shapePreset = shapePreset,
                 craterIntensity = craterIntensity,
                 surfaceRoughness = surfaceRoughness,
                 minCraters = minCraters,
@@ -63,6 +65,7 @@ namespace MiningOperation.Asteroids
         {
             if (source == null) return;
             shapeIrregularity = source.shapeIrregularity;
+            shapePreset = source.shapePreset;
             craterIntensity = source.craterIntensity;
             surfaceRoughness = source.surfaceRoughness;
             minCraters = source.minCraters;
@@ -73,6 +76,7 @@ namespace MiningOperation.Asteroids
         {
             if (target == null) return;
             target.shapeIrregularity = Mathf.Clamp01(shapeIrregularity);
+            target.shapePreset = shapePreset;
             target.craterIntensity = Mathf.Clamp01(craterIntensity);
             target.surfaceRoughness = Mathf.Clamp01(surfaceRoughness);
             target.minCraters = Mathf.Clamp(minCraters, 0, 20);
@@ -83,6 +87,7 @@ namespace MiningOperation.Asteroids
         {
             if (target == null) return;
             target.shapeIrregularity = Mathf.Clamp01(shapeIrregularity);
+            target.shapePreset = shapePreset;
             target.craterIntensity = Mathf.Clamp01(craterIntensity);
             target.surfaceRoughness = Mathf.Clamp01(surfaceRoughness);
             target.minCraters = Mathf.Clamp(minCraters, 0, 20);
@@ -92,7 +97,8 @@ namespace MiningOperation.Asteroids
         public bool Matches(AsteroidGeneratorSettings source)
         {
             if (source == null) return true;
-            return Mathf.Approximately(shapeIrregularity, source.shapeIrregularity) &&
+            return shapePreset == source.shapePreset &&
+                Mathf.Approximately(shapeIrregularity, source.shapeIrregularity) &&
                 Mathf.Approximately(craterIntensity, source.craterIntensity) &&
                 Mathf.Approximately(surfaceRoughness, source.surfaceRoughness) &&
                 minCraters == source.minCraters && maxCraters == source.maxCraters &&

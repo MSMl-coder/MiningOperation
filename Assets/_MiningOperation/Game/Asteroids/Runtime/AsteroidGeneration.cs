@@ -5,7 +5,7 @@ namespace MiningOperation.Asteroids
 {
     public static class AsteroidGeneration
     {
-        public const int GeneratorVersion = 8; // New rock geometry family/distribution update; legacy V1..V5 and V6/V7 ice shelves remain supported.
+        public const int GeneratorVersion = 9; // Fractured V9 for NEW rocks only; snapshots V1..V8 remain supported.
         public const int IceShelfGeneratorVersion = 6;
         public const int IceShelfContinentalGeneratorVersion = 7;
 

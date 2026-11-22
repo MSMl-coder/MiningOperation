@@ -31,9 +31,6 @@ namespace MiningOperation.Asteroids.Editor
         private MiningFieldContent newKind = MiningFieldContent.Rock;
         private float mapScale = 1f;
         private readonly Color panel = new Color(.115f, .16f, .195f);
-        private UnityEditor.MaterialEditor asteroidMaterialEditor;
-        private Material editingSurface;
-        private bool showMaterialParameters;
 
         [MenuItem("Tools/Mining Operation/Asteroid Field Studio")]
         public static void Open()
@@ -73,7 +70,6 @@ namespace MiningOperation.Asteroids.Editor
             AsteroidAuthoringWorkflow.StateChanged -= Repaint;
             EditorApplication.update -= Tick;
             sample.Cleanup();
-            ReleaseMaterialEditor();
         }
         private void Tick()
         {
@@ -100,7 +96,6 @@ namespace MiningOperation.Asteroids.Editor
         private void SelectAnchor(AsteroidFieldSpawnPoint a)
         {
             selected = a;
-            ReleaseMaterialEditor();
             field = a != null ? a.settings : null;
             if (a != null && a.settings != null)
             {
@@ -368,6 +363,40 @@ namespace MiningOperation.Asteroids.Editor
             DrawPreview();
         }
 
+        private static void ApplyShapePresetDefaults(SerializedObject so, string prefix)
+        {
+            var preset = (MOAsteroidShapePreset)so.FindProperty(prefix + "shapePreset").enumValueIndex;
+            float irregularity = .55f, roughness = .45f, crater = .55f, minAxis = .5f;
+            int minCraters = 2, maxCraters = 12;
+            switch (preset)
+            {
+                case MOAsteroidShapePreset.Rounded:
+                    irregularity = .33f; roughness = .12f; crater = .30f;
+                    minAxis = .76f; minCraters = 1; maxCraters = 5; break;
+                case MOAsteroidShapePreset.Fractured:
+                    irregularity = .76f; roughness = .28f; crater = .28f;
+                    minAxis = .42f; minCraters = 0; maxCraters = 4; break;
+                case MOAsteroidShapePreset.Elongated:
+                    irregularity = .52f; roughness = .20f; crater = .25f;
+                    minAxis = .38f; minCraters = 1; maxCraters = 5; break;
+                case MOAsteroidShapePreset.ContactBinary:
+                    irregularity = .63f; roughness = .23f; crater = .27f;
+                    minAxis = .54f; minCraters = 0; maxCraters = 5; break;
+                case MOAsteroidShapePreset.Cratered:
+                    irregularity = .41f; roughness = .19f; crater = .72f;
+                    minAxis = .65f; minCraters = 4; maxCraters = 9; break;
+                case MOAsteroidShapePreset.Blocky:
+                    irregularity = .82f; roughness = .25f; crater = .24f;
+                    minAxis = .38f; minCraters = 0; maxCraters = 4; break;
+            }
+            so.FindProperty(prefix + "shapeIrregularity").floatValue = irregularity;
+            so.FindProperty(prefix + "surfaceRoughness").floatValue = roughness;
+            so.FindProperty(prefix + "craterIntensity").floatValue = crater;
+            so.FindProperty(prefix + "minimumAxisScale").floatValue = minAxis;
+            so.FindProperty(prefix + "minCraters").intValue = minCraters;
+            so.FindProperty(prefix + "maxCraters").intValue = maxCraters;
+        }
+
         private void DrawShape()
         {
             if (selected.contentType == MiningFieldContent.Gas)
@@ -395,7 +424,13 @@ namespace MiningOperation.Asteroids.Editor
             }
             else
             {
-                Header(ice ? "Ice geology — this spawn" : "Rock geology — this spawn");
+                Header(ice ? "Ice geometry — this spawn" : "Rock geometry — this spawn");
+                Prop(so, prefix + "shapePreset", "Shape preset");
+                if (GUILayout.Button("Apply shape preset values", GUILayout.Height(22)))
+                {
+                    ApplyShapePresetDefaults(so, prefix);
+                    GUI.FocusControl(null);
+                }
                 Prop(so, prefix + "shapeIrregularity", "Shape irregularity");
                 Prop(so, prefix + "craterIntensity", "Crater depth");
                 Prop(so, prefix + "surfaceRoughness", "Surface roughness");
@@ -445,38 +480,6 @@ namespace MiningOperation.Asteroids.Editor
             EditorGUILayout.HelpBox("These values belong ONLY to the selected Spawn Point. Geology changes require rebuilding that field; LOD/streaming changes do not change saved asteroid mass or ore.", MessageType.Info);
         }
 
-        private void ReleaseMaterialEditor()
-        {
-            if (asteroidMaterialEditor != null) DestroyImmediate(asteroidMaterialEditor);
-            asteroidMaterialEditor = null;
-            editingSurface = null;
-        }
-
-        private void DrawUnifiedMaterialEditor(Material material)
-        {
-            if (material == null) return;
-            showMaterialParameters = EditorGUILayout.Foldout(showMaterialParameters,
-                "Edit material: colors, macro/detail noise, relief, lighting", true);
-            if (!showMaterialParameters) return;
-            if (material != editingSurface || asteroidMaterialEditor == null)
-            {
-                ReleaseMaterialEditor();
-                editingSurface = material;
-                asteroidMaterialEditor = (UnityEditor.MaterialEditor)UnityEditor.Editor.CreateEditor(material,
-                    typeof(UnityEditor.MaterialEditor));
-            }
-            if (asteroidMaterialEditor != null)
-            {
-                EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.IndentLevelScope()) asteroidMaterialEditor.OnInspectorGUI();
-                if (EditorGUI.EndChangeCheck())
-                {
-                    EditorUtility.SetDirty(material);
-                    sample.Invalidate();
-                }
-            }
-        }
-
         private void DrawVisuals()
         {
             if (field == null)
@@ -495,14 +498,12 @@ namespace MiningOperation.Asteroids.Editor
                 bool volumeMode = local.FindProperty("gasPresentation").enumValueIndex == (int)MOGasPresentation.Volumetric;
                 if (volumeMode)
                 {
-                    Prop(local, "visuals.gasVolumeMaterialOverride", "Override volume material");
                     Prop(local, "gasVolumeSteps", "Raymarch samples");
                     Prop(local, "gasVolumeNoiseScale", "3D noise scale");
                     Prop(local, "gasVolumeBrightness", "Brightness");
                 }
                 else
                 {
-                    Prop(local, "visuals.gasParticleMaterialOverride", "Override particle material");
                     Prop(local, "gasPuffsPerCloud", "Puffs per cluster");
                 }
                 Prop(local, "gasVisibilityDistanceMeters", "Visibility range (m)");
@@ -511,24 +512,13 @@ namespace MiningOperation.Asteroids.Editor
                 Prop(local, "gasColorB", "Color B");
                 Prop(local, "gasLayerContrast", "Layer irregularity");
                 Prop(local, "gasDriftStrength", "Gentle drift");
-                EditorGUILayout.HelpBox("Gas appearance is per Spawn Point and does not affect other clouds. Override materials are optional. Gas is not harvestable.", MessageType.None);
+                EditorGUILayout.HelpBox("Gas appearance is per Spawn Point and does not affect other clouds. Gas is not harvestable. Material overrides are assigned on the Spawn Point Inspector.", MessageType.None);
             }
             else
             {
-                bool ice = content == MiningFieldContent.Ice || content == MiningFieldContent.IceShelf;
-                Header("Unified asteroid surface — near + far + debris");
-                Prop(local, "visuals.unifiedAsteroidMaterialOverride", "Unique material for this Spawn Point");
-                Material authored = local.FindProperty("visuals.unifiedAsteroidMaterialOverride").objectReferenceValue as Material;
-                if (authored == null) authored = field.unifiedAsteroidMaterial;
-                if (authored == null)
-                    EditorGUILayout.HelpBox("No unified surface assigned. Use 'Install unified surface' below. Legacy materials remain as temporary fallback.", MessageType.Warning);
-                else
-                {
-                    EditorGUILayout.ObjectField("Active material", authored, typeof(Material), false);
-                    EditorGUILayout.HelpBox(ice ? "Ice mode is selected automatically for this Spawn Point. The same shader controls both rock and ice palettes." :
-                        "Rock mode is selected automatically. Near and far share one source material; no separate far asset is required.", MessageType.None);
-                    DrawUnifiedMaterialEditor(authored);
-                }
+                // Material authoring is intentionally NOT part of Field Studio.
+                // Select the .mat asset in the Project/Spawn Point inspector to
+                // choose a rock/ice library preset and edit shader layers.
                 Header("Debris & motion — this spawn");
                 Prop(local, "visuals.enableDecorativeDebris", "Decorative debris");
                 if (local.FindProperty("visuals.enableDecorativeDebris").boolValue)
@@ -585,24 +575,8 @@ namespace MiningOperation.Asteroids.Editor
                 sample.Invalidate();
                 Repaint();
             }
-            if (content != MiningFieldContent.Gas)
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("Install unified surface"))
-                    {
-                        try { MOUnifiedAsteroidAssetTools.EnsureShared(field); sample.Invalidate(); Repaint(); }
-                        catch (Exception ex) { lastError = ex.Message; }
-                    }
-                    if (GUILayout.Button("Make unique for Spawn Point"))
-                    {
-                        try { MOUnifiedAsteroidAssetTools.MakeLocal(selected); ReleaseMaterialEditor(); sample.Invalidate(); Repaint(); }
-                        catch (Exception ex) { lastError = ex.Message; }
-                    }
-                }
-                EditorGUILayout.HelpBox("One material pipeline for rock/ice and near/far. For independent edits use 'Make unique'. Old rock, ice, and far assets are fallback only and are not deleted automatically.", MessageType.None);
-            }
-            else EditorGUILayout.HelpBox("Gas uses its own volumetric/particle materials.", MessageType.None);
+            // No material editor, material installer or material presets in Field Studio.
+            // Material selection and presets live in the Material Inspector exclusively.
         }
 
         private void DrawPreview()

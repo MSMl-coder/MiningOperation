@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,16 +12,23 @@ namespace MiningOperation.Asteroids.Editor
     {
         private bool colors = true;
         private bool macro = true;
-        private bool crater = true;
+        private bool rockFracture = true;
+        private bool crater = false;
         private bool micro = false;
         private bool cavity = false;
         private bool lighting = false;
         private bool advanced = false;
+        private Material lastMaterial;
+        private int chosenCategory;
+        private string chosenPresetId;
+        private bool anyMaterialPropertyChanged;
 
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
         {
+            DrawMaterialPresets(editor);
+            anyMaterialPropertyChanged = false;
             EditorGUILayout.HelpBox(
-                "Layered procedural rock/ice surface. Macro changes large-scale structure; Crater creates separate bowls/rims; Micro controls grain. The same material is used for Near and Far.",
+                "Layered rock/ice surface. ROCK FRACTURE creates broken stone faces and dark seams; Macro controls broad color variation, Crater is optional, Micro is grain. Near/Far share the same material.",
                 MessageType.None);
             if (Fold(ref colors, "01  COLOR / COMPOSITION"))
             {
@@ -40,7 +48,19 @@ namespace MiningOperation.Asteroids.Editor
                 Field(editor, properties, "_MacroStrength", "Color variation");
                 Field(editor, properties, "_MacroNormalStrength", "Normal strength");
             }
-            if (Fold(ref crater, "03  CRATER MASK — BOWLS AND RIMS"))
+            if (Fold(ref rockFracture, "03  ROCK FRACTURE — SHARP STONE FACES"))
+            {
+                Field(editor, properties, "_RockStructureStrength", "Fracture amount (0 = original)");
+                Field(editor, properties, "_RockFractureFrequency", "Fracture scale (lower = larger)");
+                Field(editor, properties, "_RockFractureWidth", "Crevice width");
+                Field(editor, properties, "_RockFractureWarp", "Fracture irregularity");
+                Field(editor, properties, "_RockCrackDarkness", "Crevice darkness");
+                Field(editor, properties, "_RockFacetContrast", "Rock-face variation");
+                Field(editor, properties, "_RockHeightStrength", "Fractured normal relief");
+                Field(editor, properties, "_RockExposure", "Rock exposure");
+                EditorGUILayout.HelpBox("Use the 'Cinematic fractured rock' preset, then select the Fractured shape for newly generated rocks. The shader adds normals/color; only new V9 geometry adds actual mesh fractures.", MessageType.None);
+            }
+            if (Fold(ref crater, "04  CRATER MASK — BOWLS AND RIMS"))
             {
                 Field(editor, properties, "_CraterMode", "Crater shape");
                 var mode = FindProperty("_CraterMode", properties, false);
@@ -61,7 +81,7 @@ namespace MiningOperation.Asteroids.Editor
                         MessageType.None);
                 }
             }
-            if (Fold(ref micro, "04  MICRO MASK — SURFACE GRAIN"))
+            if (Fold(ref micro, "05  MICRO MASK — SURFACE GRAIN"))
             {
                 Field(editor, properties, "_MicroNoiseType", "Noise type");
                 Field(editor, properties, "_DetailFrequency", "Frequency");
@@ -72,14 +92,14 @@ namespace MiningOperation.Asteroids.Editor
                 Field(editor, properties, "_StrataStrength", "Layer strength");
                 Field(editor, properties, "_IceCrackStrength", "Ice cracks");
             }
-            if (Fold(ref cavity, "05  CAVITY MASK — DEPRESSIONS"))
+            if (Fold(ref cavity, "06  CAVITY MASK — DEPRESSIONS"))
             {
                 Field(editor, properties, "_CavityColor", "Cavity tint");
                 Field(editor, properties, "_CavityStrength", "Darkening strength");
                 Field(editor, properties, "_CavityContrast", "Mask contrast");
                 Field(editor, properties, "_CavityRoughnessStrength", "Roughness contribution");
             }
-            if (Fold(ref lighting, "06  LIGHTING / MATERIAL RESPONSE"))
+            if (Fold(ref lighting, "07  LIGHTING / MATERIAL RESPONSE"))
             {
                 Field(editor, properties, "_Smoothness", "Smoothness");
                 Field(editor, properties, "_Metallic", "Metallic");
@@ -97,6 +117,66 @@ namespace MiningOperation.Asteroids.Editor
                 editor.DoubleSidedGIField();
                 EditorGUILayout.HelpBox("Object radius, seed and LOD visibility are managed by the renderer and should not be edited on the material.", MessageType.None);
             }
+            if (anyMaterialPropertyChanged)
+            {
+                // Manual property edits are independent of library defaults.
+                // Foldout clicks never mark a material as customized.
+                foreach (UnityEngine.Object obj in editor.targets)
+                {
+                    var material = obj as Material;
+                    if (material == null) continue;
+                    Undo.RecordObject(material, "Customize asteroid material preset");
+                    material.SetOverrideTag(MOAsteroidMaterialPresets.MaterialTag, "custom");
+                    EditorUtility.SetDirty(material);
+                }
+            }
+        }
+
+        private void DrawMaterialPresets(MaterialEditor editor)
+        {
+            Material material = editor.target as Material;
+            if (material == null) return;
+            if (lastMaterial != material)
+            {
+                lastMaterial = material;
+                string currentId = material.GetTag(MOAsteroidMaterialPresets.MaterialTag, false, "");
+                var activePreset = MOAsteroidMaterialPresets.Find(currentId);
+                chosenCategory = 0;
+                if (activePreset != null)
+                {
+                    for (int i = 0; i < MOAsteroidMaterialPresets.Categories.Length; i++)
+                        if (MOAsteroidMaterialPresets.Categories[i] == activePreset.category) chosenCategory = i;
+                }
+                chosenPresetId = currentId;
+            }
+            EditorGUILayout.LabelField("MATERIAL PRESET LIBRARY", EditorStyles.boldLabel);
+            string active = material.GetTag(MOAsteroidMaterialPresets.MaterialTag, false, "");
+            var assigned = MOAsteroidMaterialPresets.Find(active);
+            EditorGUILayout.LabelField("Currently applied", assigned != null ? assigned.title : "Custom / Unassigned");
+            chosenCategory = EditorGUILayout.Popup("Rock / ice category", chosenCategory,
+                MOAsteroidMaterialPresets.Categories);
+            var available = MOAsteroidMaterialPresets.ForCategory(
+                MOAsteroidMaterialPresets.Categories[chosenCategory]);
+            int index = 0;
+            for (int i = 0; i < available.Length; i++)
+                if (available[i].id == chosenPresetId) { index = i; break; }
+            if (available.Length == 0) return;
+            index = EditorGUILayout.Popup("Material type", index, Array.ConvertAll(available, p => p.title));
+            chosenPresetId = available[index].id;
+            EditorGUILayout.HelpBox(available[index].description, MessageType.None);
+            if (GUILayout.Button("Apply selected preset", GUILayout.Height(24f)))
+            {
+                int applied = 0;
+                foreach (UnityEngine.Object obj in editor.targets)
+                    if (MOAsteroidMaterialPresets.Apply(obj as Material, available[index])) applied++;
+                if (applied > 0)
+                {
+                    lastMaterial = null; // reload selection when inspector is redrawn
+                    editor.Repaint();
+                }
+            }
+            EditorGUILayout.HelpBox("Applying a preset replaces all exposed surface values on the selected .mat. Subsequent manual changes become Custom. Make a unique material first if different fields must look different.", MessageType.None);
+            EditorGUILayout.Space(8f);
         }
 
         private static bool Fold(ref bool open, string title)
@@ -105,10 +185,13 @@ namespace MiningOperation.Asteroids.Editor
             return open;
         }
 
-        private static void Field(MaterialEditor editor, MaterialProperty[] props, string name, string label)
+        private void Field(MaterialEditor editor, MaterialProperty[] props, string name, string label)
         {
             MaterialProperty property = FindProperty(name, props, false);
-            if (property != null) editor.ShaderProperty(property, label);
+            if (property == null) return;
+            EditorGUI.BeginChangeCheck();
+            editor.ShaderProperty(property, label);
+            if (EditorGUI.EndChangeCheck()) anyMaterialPropertyChanged = true;
         }
     }
 }

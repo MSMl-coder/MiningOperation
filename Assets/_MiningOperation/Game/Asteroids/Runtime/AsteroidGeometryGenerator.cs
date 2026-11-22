@@ -71,7 +71,7 @@ namespace MiningOperation.Asteroids
                 data.geometryProfile != null && data.geometryProfile.iceShelf)
                 return AsteroidIceShelfGeometry.Generate(data.seed, data.diameterMeters,
                     data.geometryProfile, subdivisions, visualColors);
-            if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4 && data.generatorVersion != 5 && data.generatorVersion != 8) || data.geometryProfile == null)
+            if ((data.generatorVersion != 2 && data.generatorVersion != 3 && data.generatorVersion != 4 && data.generatorVersion != 5 && data.generatorVersion != 8 && data.generatorVersion != 9) || data.geometryProfile == null)
                 throw new InvalidOperationException("Unsupported asteroid geometry version or missing shape profile.");
             // V8: more distinct silhouette families with a cleaner silhouette target.
             // Versions 1..5 follow their exact legacy recipes for save compatibility.
@@ -84,7 +84,7 @@ namespace MiningOperation.Asteroids
                 working.minCraters = Mathf.Min(working.minCraters, 3);
                 working.maxCraters = Mathf.Min(working.maxCraters, 7);
             }
-            else if (data.generatorVersion == 8)
+            else if (data.generatorVersion == 8 || data.generatorVersion == 9)
             {
                 working = data.geometryProfile.Copy();
                 working.surfaceRoughness *= .16f;
@@ -93,8 +93,12 @@ namespace MiningOperation.Asteroids
                 working.maxCraters = Mathf.Min(working.maxCraters, 10);
             }
             Mesh mesh = GenerateV2(data.seed, data.diameterMeters, working, subdivisions, visualColors, data.generatorVersion);
-            if (data.generatorVersion == 5 || data.generatorVersion == 8)
+            if (data.generatorVersion == 5 || data.generatorVersion == 8 || data.generatorVersion == 9)
+            {
                 AsteroidGeologyV5.Apply(mesh, data.seed, data.geometryProfile);
+                if (data.generatorVersion == 9)
+                    AsteroidGeologyV9.Apply(mesh, data.seed, data.geometryProfile);
+            }
             else
             {
                 if (data.generatorVersion >= 3)
@@ -112,7 +116,7 @@ namespace MiningOperation.Asteroids
             if (profile == null) throw new ArgumentNullException(nameof(profile));
             if (!AsteroidCompositionGenerator.IsFinite(diameterMeters) || diameterMeters <= 0f)
                 throw new ArgumentOutOfRangeException(nameof(diameterMeters));
-            var shape = geometryVersion == 8 ? BuildShapeV8(seed, profile) : BuildShapeLegacy(seed, profile);
+            var shape = geometryVersion == 8 || geometryVersion == 9 ? BuildShapeV8(seed, profile) : BuildShapeLegacy(seed, profile);
             IcoTemplate sphere = GetTemplate(Mathf.Clamp(subdivisions, 0, 6));
             var vertices = new List<Vector3>(sphere.directions);
             float scale = diameterMeters * 0.5f;
@@ -233,6 +237,17 @@ namespace MiningOperation.Asteroids
                 familyRoll < 0.58f ? ShapeFamily.Faceted :
                 familyRoll < 0.73f ? ShapeFamily.ContactBinary :
                 familyRoll < 0.88f ? ShapeFamily.Cratered : ShapeFamily.Blocky;
+            // Explicit art-directed morphology. We still consume the same random roll,
+            // so Mixed shapes generated with old seeds remain bit-for-bit consistent.
+            switch (profile.shapePreset)
+            {
+                case MOAsteroidShapePreset.Rounded: family = ShapeFamily.Rounded; break;
+                case MOAsteroidShapePreset.Fractured: family = ShapeFamily.Faceted; break;
+                case MOAsteroidShapePreset.Elongated: family = ShapeFamily.Elongated; break;
+                case MOAsteroidShapePreset.ContactBinary: family = ShapeFamily.ContactBinary; break;
+                case MOAsteroidShapePreset.Cratered: family = ShapeFamily.Cratered; break;
+                case MOAsteroidShapePreset.Blocky: family = ShapeFamily.Blocky; break;
+            }
             var shape = new Shape
             {
                 family = family,

@@ -45,9 +45,15 @@ namespace MiningOperation.Asteroids
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockAlbedoTexture,
                     snapshot != null && (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? null : ActiveSettings.rockNormalTexture,
                     ActiveSettings.rockNormalStrength);
-            if (AsteroidStableMaterials.IsUnified(runtimeNearMaterial))
+            if (AsteroidStableMaterials.IsUnified(runtimeNearMaterial) &&
+                string.IsNullOrEmpty(runtimeNearMaterial.GetTag("MO_SurfacePreset", false, "")))
+            {
+                // Legacy untagged shared materials historically derive rock/ice mode
+                // from field content. A categorized material preset (or Custom) owns its
+                // own _IceBlend and must be identical in near/far/debris rendering.
                 runtimeNearMaterial.SetFloat("_IceBlend", snapshot != null &&
                     (snapshot.contentType == MiningFieldContent.Ice || snapshot.contentType == MiningFieldContent.IceShelf) ? 1f : 0f);
+            }
             return runtimeNearMaterial;
         }
 

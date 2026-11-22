@@ -25,11 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _GasBrightness: 1
+    - _GasBrightness: 0.75
     - _GasContrast: 0.35
     - _GasDrift: 0.553
     - _GasNoiseScale: 1
-    - _GasOpacity: 0.79
+    - _GasOpacity: 0.627
     - _GasSteps: 17.8
     m_Colors:
     - _GasColorA: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}

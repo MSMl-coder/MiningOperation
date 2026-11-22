@@ -10,6 +10,7 @@ namespace MiningOperation.Asteroids
         public AsteroidResourceCatalog catalog;
         [Min(1f)] public float minimumDiameterMeters = 12f;
         [Min(1f)] public float maximumDiameterMeters = 240f;
+        public MOAsteroidShapePreset shapePreset = MOAsteroidShapePreset.Mixed;
         [Range(0f, 1f)] public float shapeIrregularity = 0.55f;
         [Range(0f, 1f)] public float craterIntensity = 0.55f;
         [Range(0f, 1f)] public float surfaceRoughness = 0.45f;

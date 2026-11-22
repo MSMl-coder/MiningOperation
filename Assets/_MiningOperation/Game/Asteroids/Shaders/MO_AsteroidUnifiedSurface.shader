@@ -28,6 +28,15 @@ Shader "Mining Operation/Asteroid Unified Surface"
         _CraterColorStrength ("Crater color strength", Range(0, 1)) = 0.28
         _CraterNormalStrength ("Crater normal strength", Range(0, 2)) = 0.75
         _CraterRoughnessStrength ("Crater roughness influence", Range(0, 1)) = 0.25
+        [Header(Rock fracture / layered stone)]
+        _RockStructureStrength ("Fractured rock amount", Range(0,1)) = 0
+        _RockFractureFrequency ("Fracture scale", Range(0.4,10)) = 3.0
+        _RockFractureWidth ("Crevice width", Range(0.008,0.28)) = 0.075
+        _RockFractureWarp ("Fracture irregularity", Range(0,0.5)) = 0.18
+        _RockCrackDarkness ("Crevice darkness", Range(0,1)) = 0.70
+        _RockFacetContrast ("Rock face color contrast", Range(0,1)) = 0.40
+        _RockHeightStrength ("Fractured rock normal relief", Range(0,2)) = 0.80
+        _RockExposure ("Rock surface exposure", Range(0.5,2)) = 1.00
         [Header(Fine noise)]
         _DetailFrequency ("Detail frequency", Range(2, 100)) = 19
         _DetailStrength ("Detail color strength", Range(0, 1)) = 0.12
@@ -84,6 +93,8 @@ Shader "Mining Operation/Asteroid Unified Surface"
             float _CraterRimSharpness, _CraterSecondary, _CraterColorStrength, _CraterNormalStrength, _CraterRoughnessStrength;
             float _CavityStrength, _Smoothness, _Metallic, _AmbientFill, _LightWrap, _DarkSideFill, _RimStrength, _RimPower;
             float _CavityContrast, _CavityRoughnessStrength;
+            float _RockStructureStrength, _RockFractureFrequency, _RockFractureWidth, _RockFractureWarp;
+            float _RockCrackDarkness, _RockFacetContrast, _RockHeightStrength, _RockExposure;
             float _MO_ObjectRadius, _MO_LODVisibility, _MO_SurfaceSeed;
             CBUFFER_END
 
@@ -151,6 +162,35 @@ Shader "Mining Operation/Asteroid Unified Surface"
                 if (mode > 1.5) return abs(n * 2.0 - 1.0);       // billow
                 if (mode > 0.5) return 1.0 - abs(n * 2.0 - 1.0); // ridge
                 return n;
+            }
+
+            // Nearest two irregular 3D rock cells and stable nearest-cell tint.
+            // F2-F1 vanishes at fractures; no UV islands or repeated tile textures.
+            // This is deliberately separate from the round crater field.
+            float3 RockCellData(float3 p)
+            {
+                float3 cell = floor(p);
+                float3 fracP = frac(p);
+                float3 side = step(.5, fracP) * 2.0 - 1.0;
+                float d1 = 1e5, d2 = 1e5;
+                float nearestTint = .5;
+                [unroll] for (int x = 0; x < 2; ++x)
+                [unroll] for (int y = 0; y < 2; ++y)
+                [unroll] for (int z = 0; z < 2; ++z)
+                {
+                    float3 g = cell + float3(side.x * x, side.y * y, side.z * z);
+                    float3 center = g + float3(Hash31(g + 11.37), Hash31(g + 19.23),
+                        Hash31(g + 43.57)) * .60 + .20;
+                    float d = length(p - center);
+                    if (d < d1)
+                    {
+                        d2 = d1;
+                        d1 = d;
+                        nearestTint = Hash31(g + 71.41);
+                    }
+                    else if (d < d2) d2 = d;
+                }
+                return float3(d1, d2, nearestTint);
             }
 
             // Bowl and rim are independent output masks. Hash-based crater occupancy
@@ -264,6 +304,34 @@ Shader "Mining Operation/Asteroid Unified Surface"
                 float craterBowlMask = saturate(craters.x);
                 float craterRimMask = saturate(craters.y);
 
+                // 3. Rock fracture mask: sharp mineral faces and eroded crevices.
+                // Rock keeps this disabled by default on existing .mat assets until
+                // a new rugged-material preset is applied. Ice is not affected.
+                float rockWeight = (1.0 - saturate(_IceBlend)) * saturate(_RockStructureStrength);
+                float rockCrevice = 0.0, rockFacetTint = .5, rockRidge = 0.0;
+                float fractureFade = saturate(1.0 - surfacePixel * _RockFractureFrequency * 1.4);
+                if (rockWeight > .001 && fractureFade > .001)
+                {
+                    float3 fractureP = objectPosition * _RockFractureFrequency
+                        + seedOffset * .137 + 31.79;
+                    // Low-frequency domain warp breaks uniform polygon edges.
+                    float3 warp = float3(
+                        ValueNoise(fractureP * .61 + 12.33),
+                        ValueNoise(fractureP * .59 + 41.13),
+                        ValueNoise(fractureP * .63 + 89.17)) - .5;
+                    fractureP += warp * _RockFractureWarp;
+                    float3 cells = RockCellData(fractureP);
+                    float edgeDistance = max(0.0, cells.y - cells.x);
+                    float width = max(.004, _RockFractureWidth);
+                    rockCrevice = 1.0 - smoothstep(width * .20, width, edgeDistance);
+                    rockCrevice *= fractureFade;
+                    // Cell-specific tonal planes + small ridged relief inside each face.
+                    rockFacetTint = cells.z;
+                    rockRidge = 1.0 - abs(2.0 * ValueNoise(
+                        fractureP * 1.37 + 5.71) - 1.0);
+                    rockRidge = rockRidge * rockRidge * fractureFade;
+                }
+
                 // 3. MicroMask: fine grain; attenuated according to screen footprint.
                 float detailPixel = surfacePixel * _DetailFrequency;
                 float detailFade = saturate(1.0 - detailPixel * 1.6);
@@ -294,14 +362,24 @@ Shader "Mining Operation/Asteroid Unified Surface"
                 float craterTint = saturate(craterBowlMask * _CraterColorStrength +
                     cavityMask * _CavityStrength);
                 albedo = lerp(albedo, _CavityColor.rgb, craterTint);
-                albedo = max(0.01, albedo + _CraterRimHeight * craterRimMask * .05);
+                // Do not brighten crater rims artificially. Their shape is conveyed
+                // by a normal change and directional illumination instead.
+                float faceContrast = (rockFacetTint - .5) * 2.0 * _RockFacetContrast;
+                float rockFaceTone = 1.0 + rockWeight * (faceContrast * .27 + (rockRidge - .35) * .11);
+                albedo *= rockFaceTone;
+                albedo = lerp(albedo, _CavityColor.rgb,
+                    saturate(rockCrevice * _RockCrackDarkness * rockWeight));
+                albedo *= lerp(1.0, _RockExposure, 1.0 - saturate(_IceBlend));
+                albedo = max(.005, albedo);
 
                 // Unified authored height. Derivatives perturb normals without requiring
                 // more triangles or UV textures. Craters are not actual mesh displacement.
                 float height = (macroMask - .5) * _MacroNormalStrength * .065
                     + (-craterBowlMask * _CraterDepth + craterRimMask * _CraterRimHeight)
                         * _CraterNormalStrength * .18
-                    + microSigned * _DetailNormalStrength * .018;
+                    + microSigned * _DetailNormalStrength * .018
+                    + rockWeight * _RockHeightStrength *
+                        ((faceContrast * .018) + (rockRidge - .35) * .018 - rockCrevice * .027);
                 float3 dpdx = ddx(i.positionWS);
                 float3 dpdy = ddy(i.positionWS);
                 float3 r1 = cross(dpdy, normWS);
@@ -313,7 +391,8 @@ Shader "Mining Operation/Asteroid Unified Surface"
                 float localSmoothness = saturate(_Smoothness
                     - abs(microSigned) * _MicroRoughnessStrength * .18
                     - craterBowlMask * _CraterRoughnessStrength * .25
-                    - cavityMask * _CavityRoughnessStrength * .20);
+                    - cavityMask * _CavityRoughnessStrength * .20
+                    - rockCrevice * rockWeight * .06);
                 Light mainLight = GetMainLight(i.shadowCoord);
                 // Wrapped diffuse extends the soft terminator onto the unlit side.
                 // This is a controllable visual choice for legible space rocks, not a
@@ -369,6 +448,8 @@ Shader "Mining Operation/Asteroid Unified Surface"
             float _CraterRimSharpness, _CraterSecondary, _CraterColorStrength, _CraterNormalStrength, _CraterRoughnessStrength;
             float _CavityStrength, _Smoothness, _Metallic, _AmbientFill, _LightWrap, _DarkSideFill, _RimStrength, _RimPower;
             float _CavityContrast, _CavityRoughnessStrength;
+            float _RockStructureStrength, _RockFractureFrequency, _RockFractureWidth, _RockFractureWarp;
+            float _RockCrackDarkness, _RockFacetContrast, _RockHeightStrength, _RockExposure;
             float _MO_ObjectRadius, _MO_LODVisibility, _MO_SurfaceSeed;
             CBUFFER_END
 

@@ -7,6 +7,20 @@ namespace MiningOperation.Asteroids
     public enum AsteroidClass { I = 1, II = 2, III = 3 }
     public enum ResourceRarity { Common = 0, Industrial = 1, Rare = 2, Exotic = 3 }
 
+    // Preserved in each asteroid's immutable geometry profile. Zero keeps the
+    // original seed-dependent mixture for existing serialized snapshots.
+    public enum MOAsteroidShapePreset
+    {
+        Mixed = 0,
+        Rounded = 1,
+        Fractured = 2,
+        Elongated = 3,
+        ContactBinary = 4,
+        Cratered = 5,
+        Blocky = 6
+    }
+
+
     [Serializable]
     public sealed class ResourceDefinition
     {
@@ -25,6 +39,7 @@ namespace MiningOperation.Asteroids
     public sealed class AsteroidGeometryProfile
     {
         public float shapeIrregularity;
+        public MOAsteroidShapePreset shapePreset;
         public float craterIntensity;
         public float surfaceRoughness;
         public int minCraters;
@@ -49,6 +64,7 @@ namespace MiningOperation.Asteroids
             return new AsteroidGeometryProfile
             {
                 shapeIrregularity = Mathf.Clamp01(settings.shapeIrregularity),
+                shapePreset = settings.shapePreset,
                 craterIntensity = Mathf.Clamp01(settings.craterIntensity),
                 surfaceRoughness = Mathf.Clamp01(settings.surfaceRoughness),
                 minCraters = Mathf.Clamp(settings.minCraters, 0, 60),

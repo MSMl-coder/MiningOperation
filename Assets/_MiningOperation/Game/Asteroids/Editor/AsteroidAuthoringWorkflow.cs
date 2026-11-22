@@ -133,6 +133,11 @@ namespace MiningOperation.Asteroids.Editor
                 spawn.contentType == MiningFieldContent.IceShelf)
                 Append(signature, spawn.shelfThicknessRatio, spawn.shelfFractureStrength,
                     spawn.shelfCollisionStrength, spawn.shelfRiftDepth);
+            // A forced shape family changes the generated mesh and consequently volume.
+            // This needs an explicit rebuild, unlike material changes.
+            var activeShape = spawn.ActiveGeology;
+            if (activeShape.shapePreset != MOAsteroidShapePreset.Mixed)
+                signature.Append("|shapePreset=").Append((int)activeShape.shapePreset);
             // Backwards-compatible signatures: old fields with inherited geology keep
             // the exact v2.5.1 hash. Only a genuine local shape change adds inputs.
             if (spawn.rockGeology != null && !spawn.rockGeology.Matches(spawn.settings.asteroidSettings))

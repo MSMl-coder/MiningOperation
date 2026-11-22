@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 220
   m_LinearFogEnd: 1000
-  m_AmbientSkyColor: {r: 0.4, g: 0.46, b: 0.5, a: 1}
+  m_AmbientSkyColor: {r: 0.7830189, g: 0.76208913, b: 0.7202296, a: 1}
   m_AmbientEquatorColor: {r: 0.16078432, g: 0.29411766, b: 0.38431373, a: 1}
   m_AmbientGroundColor: {r: 0.09019608, g: 0.17254902, b: 0.23921569, a: 1}
   m_AmbientIntensity: 1
@@ -287,8 +287,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 1, g: 0.97, b: 0.89, a: 1}
-  m_Intensity: 1.85
+  m_Color: {r: 0.9716981, g: 0.95091254, b: 0.91211283, a: 1}
+  m_Intensity: 2.87
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
@@ -375,7 +375,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &456736259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -441,6 +441,7 @@ MonoBehaviour:
   shelfRiftDepth: 0.48
   localSettingsInitialized: 1
   rockGeology:
+    shapePreset: 0
     shapeIrregularity: 0.55
     craterIntensity: 0.55
     surfaceRoughness: 0.45
@@ -448,6 +449,7 @@ MonoBehaviour:
     maxCraters: 30
     minimumAxisScale: 0.48
   iceGeology:
+    shapePreset: 0
     shapeIrregularity: 0.73
     craterIntensity: 0.237
     surfaceRoughness: 0.2
@@ -478,6 +480,7 @@ MonoBehaviour:
     meshColliders: 0
     hideDepletedAsteroids: 1
   visuals:
+    unifiedAsteroidMaterialOverride: {fileID: 0}
     rockMaterialOverride: {fileID: 0}
     iceMaterialOverride: {fileID: 0}
     distantMaterialOverride: {fileID: 0}
@@ -1348,8 +1351,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
-  m_Color: {r: 0.16487186, g: 0.17299597, b: 0.1792453, a: 1}
-  m_Intensity: 0.62
+  m_Color: {r: 0.7924528, g: 0.77910286, b: 0.69900316, a: 1}
+  m_Intensity: 1.6
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.802082
@@ -1502,13 +1505,15 @@ MonoBehaviour:
   shelfRiftDepth: 0.48
   localSettingsInitialized: 1
   rockGeology:
-    shapeIrregularity: 0.716
-    craterIntensity: 0.507
-    surfaceRoughness: 0.311
-    minCraters: 6
-    maxCraters: 32
-    minimumAxisScale: 0.68
+    shapePreset: 0
+    shapeIrregularity: 0.55
+    craterIntensity: 0.55
+    surfaceRoughness: 0.45
+    minCraters: 2
+    maxCraters: 12
+    minimumAxisScale: 0.5
   iceGeology:
+    shapePreset: 0
     shapeIrregularity: 0.55
     craterIntensity: 0.55
     surfaceRoughness: 0.45
@@ -1539,6 +1544,7 @@ MonoBehaviour:
     meshColliders: 0
     hideDepletedAsteroids: 1
   visuals:
+    unifiedAsteroidMaterialOverride: {fileID: 2100000, guid: 31148529c3efe434d9e7739452f443b2, type: 2}
     rockMaterialOverride: {fileID: 2100000, guid: b5b43d2c37e504653a4bd599f4f90f30, type: 2}
     iceMaterialOverride: {fileID: 0}
     distantMaterialOverride: {fileID: 2100000, guid: b5b43d2c37e504653a4bd599f4f90f30, type: 2}
@@ -1560,7 +1566,7 @@ MonoBehaviour:
   minimumDiameterMeters: 123.8
   maximumDiameterMeters: 881.4
   smallAsteroidBias: 0.683
-  lastBuildSignature: C6B79B7D69882164
+  lastBuildSignature: E0BA6F3559E6FA1D
 --- !u!114 &1813143710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1598,10 +1604,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 730.8807
-        volumeM3: 106206208.41334784
+        volumeM3: 106314615.60045864
         densityKgM3: 3926.5092894021013
-        initialMassKg: 417019663927.1859
-        remainingMassKg: 417019663927.1859
+        initialMassKg: 417445325754.4144
+        remainingMassKg: 417445325754.4144
         composition:
         - resourceId: iron
           fraction: 0.38608692537159167
@@ -1614,12 +1620,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.11899305705768248
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1636,10 +1643,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 184.37529
-        volumeM3: 1507126.7170518523
+        volumeM3: 1511923.2156657015
         densityKgM3: 3307.9147223264413
-        initialMassKg: 4985446655.747339
-        remainingMassKg: 4985446655.747339
+        initialMassKg: 5001313064.127709
+        remainingMassKg: 5001313064.127709
         composition:
         - resourceId: carbon
           fraction: 0.332144408758406
@@ -1648,12 +1655,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.17182774477486717
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1670,22 +1678,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.29576
-        volumeM3: 6602360.410227156
+        volumeM3: 6596673.426363055
         densityKgM3: 1841.355566130854
-        initialMassKg: 12157293090.973763
-        remainingMassKg: 12157293090.973763
+        initialMassKg: 12146821331.581102
+        remainingMassKg: 12146821331.581102
         composition:
         - resourceId: silicates
           fraction: 0.4085286977841023
         - resourceId: carbon
           fraction: 0.5914713022158977
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1702,10 +1711,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 234.68884
-        volumeM3: 2141547.216312955
+        volumeM3: 1233060.5330220044
         densityKgM3: 3401.8196598577533
-        initialMassKg: 7285157422.967055
-        remainingMassKg: 7285157422.967055
+        initialMassKg: 4194649563.028935
+        remainingMassKg: 4194649563.028935
         composition:
         - resourceId: carbon
           fraction: 0.11646733830700438
@@ -1718,12 +1727,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.27377559009228436
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1740,10 +1750,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 476.63974
-        volumeM3: 25382013.32648979
+        volumeM3: 18071562.944963273
         densityKgM3: 2801.1836390120025
-        initialMassKg: 71099680455.34781
-        remainingMassKg: 71099680455.34781
+        initialMassKg: 50621766452.80668
+        remainingMassKg: 50621766452.80668
         composition:
         - resourceId: iron
           fraction: 0.3465859889776232
@@ -1754,12 +1764,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.518651359027537
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1776,10 +1787,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.27701
-        volumeM3: 3384349.6646808605
+        volumeM3: 2612082.9636556716
         densityKgM3: 3440.650068907182
-        initialMassKg: 11644362906.9902
-        remainingMassKg: 11644362906.9902
+        initialMassKg: 8987263428.893162
+        remainingMassKg: 8987263428.893162
         composition:
         - resourceId: cobalt
           fraction: 0.1522856924224527
@@ -1792,12 +1803,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.26132173373101286
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1814,10 +1826,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.27034
-        volumeM3: 3487855.9223145354
+        volumeM3: 3213668.1927434653
         densityKgM3: 2564.172885654689
-        initialMassKg: 8943465585.069057
-        remainingMassKg: 8943465585.069057
+        initialMassKg: 8240400843.3237
+        remainingMassKg: 8240400843.3237
         composition:
         - resourceId: carbon
           fraction: 0.1987600428932006
@@ -1826,12 +1838,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.6287833719567286
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1848,10 +1861,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 503.84134
-        volumeM3: 37971331.147355966
+        volumeM3: 33322713.25212982
         densityKgM3: 2915.0552582852997
-        initialMassKg: 110688528525.1924
-        remainingMassKg: 110688528525.1924
+        initialMassKg: 97137550485.95427
+        remainingMassKg: 97137550485.95427
         composition:
         - resourceId: silicates
           fraction: 0.2821523612238675
@@ -1864,12 +1877,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.23197583868958427
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1886,22 +1900,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.88765
-        volumeM3: 5998746.730447042
+        volumeM3: 6008390.94494139
         densityKgM3: 8076.6702662428515
-        initialMassKg: 48449899352.52315
-        remainingMassKg: 48449899352.52315
+        initialMassKg: 48527792492.97092
+        remainingMassKg: 48527792492.97092
         composition:
         - resourceId: platinum_group
           fraction: 0.09048656261369814
         - resourceId: cobalt
           fraction: 0.9095134373863019
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1918,10 +1933,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 347.07443
-        volumeM3: 13679703.418442098
+        volumeM3: 13801388.744138641
         densityKgM3: 2917.698007609399
-        initialMassKg: 39913243408.675995
-        remainingMassKg: 39913243408.675995
+        initialMassKg: 40268284441.0161
+        remainingMassKg: 40268284441.0161
         composition:
         - resourceId: iron
           fraction: 0.38180700098613624
@@ -1930,12 +1945,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.3862891176291411
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1952,22 +1968,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.51888
-        volumeM3: 4045423.6471377206
+        volumeM3: 4051688.913227105
         densityKgM3: 7054.404723402881
-        initialMassKg: 28538055684.534046
-        remainingMassKg: 28538055684.534046
+        initialMassKg: 28582253407.22838
+        remainingMassKg: 28582253407.22838
         composition:
         - resourceId: platinum_group
           fraction: 0.10766708896308189
         - resourceId: iron
           fraction: 0.8923329110369181
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -1984,10 +2001,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.11577
-        volumeM3: 4229199.176877268
+        volumeM3: 4264716.9109285185
         densityKgM3: 3154.954028007296
-        initialMassKg: 13342928978.334076
-        remainingMassKg: 13342928978.334076
+        initialMassKg: 13454985796.444763
+        remainingMassKg: 13454985796.444763
         composition:
         - resourceId: carbon
           fraction: 0.1941593362301418
@@ -2000,12 +2017,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.1419577315605539
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2022,10 +2040,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 383.5365
-        volumeM3: 13000726.507643273
+        volumeM3: 10039592.893648205
         densityKgM3: 3722.5964966172187
-        initialMassKg: 48396458950.83146
-        remainingMassKg: 48396458950.83146
+        initialMassKg: 37373353333.35793
+        remainingMassKg: 37373353333.35793
         composition:
         - resourceId: iron
           fraction: 0.19356951721797183
@@ -2038,12 +2056,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.15116194116814596
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2060,22 +2079,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.75606
-        volumeM3: 2761251.778423027
+        volumeM3: 2802269.9700402073
         densityKgM3: 3700.0144043338773
-        initialMassKg: 10216671354.157736
-        remainingMassKg: 10216671354.157736
+        initialMassKg: 10368439253.98103
+        remainingMassKg: 10368439253.98103
         composition:
         - resourceId: silicates
           fraction: 0.5167433543566262
         - resourceId: iron
           fraction: 0.4832566456433738
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2092,10 +2112,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.29807
-        volumeM3: 3494326.8009513877
+        volumeM3: 3504606.1022193027
         densityKgM3: 3679.178047151864
-        initialMassKg: 12856250455.634747
-        remainingMassKg: 12856250455.634747
+        initialMassKg: 12894069835.19972
+        remainingMassKg: 12894069835.19972
         composition:
         - resourceId: carbon
           fraction: 0.15986499434502258
@@ -2104,12 +2124,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.31781317249650465
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2126,10 +2147,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 225.52205
-        volumeM3: 5586056.894952438
+        volumeM3: 5564699.233194847
         densityKgM3: 4053.7114333765435
-        initialMassKg: 22644262702.56057
-        remainingMassKg: 22644262702.56057
+        initialMassKg: 22557684904.903633
+        remainingMassKg: 22557684904.903633
         composition:
         - resourceId: nickel
           fraction: 0.22563013951842611
@@ -2138,12 +2159,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.5020710521468426
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2160,22 +2182,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.1996
-        volumeM3: 4917983.057525891
+        volumeM3: 4957110.622438027
         densityKgM3: 7330.665077807554
-        initialMassKg: 36052086653.05427
-        remainingMassKg: 36052086653.05427
+        initialMassKg: 36338917726.735306
+        remainingMassKg: 36338917726.735306
         composition:
         - resourceId: iron
           fraction: 0.5638948945285996
         - resourceId: nickel
           fraction: 0.43610510547140036
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2192,10 +2215,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 229.88872
-        volumeM3: 5190278.133289452
+        volumeM3: 5155923.259042776
         densityKgM3: 3384.4626024838594
-        initialMassKg: 17566302238.607887
-        remainingMassKg: 17566302238.607887
+        initialMassKg: 17450029451.506977
+        remainingMassKg: 17450029451.506977
         composition:
         - resourceId: carbon
           fraction: 0.3987215859538817
@@ -2204,12 +2227,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.4478240304559744
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2226,22 +2250,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.22984
-        volumeM3: 2927222.803615387
+        volumeM3: 2069885.8933177327
         densityKgM3: 2066.855929272805
-        initialMassKg: 6050147807.955027
-        remainingMassKg: 6050147807.955027
+        initialMassKg: 4278155931.5218925
+        remainingMassKg: 4278155931.5218925
         composition:
         - resourceId: carbon
           fraction: 0.4807355149284252
         - resourceId: silicates
           fraction: 0.5192644850715749
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2258,10 +2283,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.28012
-        volumeM3: 4583904.569284548
+        volumeM3: 4209888.435088118
         densityKgM3: 3219.0016347899646
-        initialMassKg: 14755596302.248148
-        remainingMassKg: 14755596302.248148
+        initialMassKg: 13551637754.832016
+        remainingMassKg: 13551637754.832016
         composition:
         - resourceId: iron
           fraction: 0.21613044831356354
@@ -2270,12 +2295,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.12537393709729727
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2292,10 +2318,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 856.4641
-        volumeM3: 138742871.179512
+        volumeM3: 139792726.72637448
         densityKgM3: 5051.94784840445
-        initialMassKg: 700921749536.7914
-        remainingMassKg: 700921749536.7914
+        initialMassKg: 706225565007.8988
+        remainingMassKg: 706225565007.8988
         composition:
         - resourceId: platinum_group
           fraction: 0.07474232315848042
@@ -2308,12 +2334,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.2248091063312091
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2330,22 +2357,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 128.68695
-        volumeM3: 834403.6743145963
+        volumeM3: 835100.1202638113
         densityKgM3: 2450.468878795374
-        initialMassKg: 2044680236.2604294
-        remainingMassKg: 2044680236.2604294
+        initialMassKg: 2046386855.384744
+        remainingMassKg: 2046386855.384744
         composition:
         - resourceId: carbon
           fraction: 0.7224589544663541
         - resourceId: iron
           fraction: 0.2775410455336459
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2362,22 +2390,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 372.9968
-        volumeM3: 15673492.047577163
+        volumeM3: 13967001.387512028
         densityKgM3: 2761.695466991889
-        initialMassKg: 43285411939.72727
-        remainingMassKg: 43285411939.72727
+        initialMassKg: 38572604419.3614
+        remainingMassKg: 38572604419.3614
         composition:
         - resourceId: iron
           fraction: 0.17338667585211837
         - resourceId: silicates
           fraction: 0.8266133241478817
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2394,22 +2423,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.83574
-        volumeM3: 2831299.5620257338
+        volumeM3: 2373187.8927147742
         densityKgM3: 3338.747200320049
-        initialMassKg: 9452993485.9808
-        remainingMassKg: 9452993485.9808
+        initialMassKg: 7923474432.63489
+        remainingMassKg: 7923474432.63489
         composition:
         - resourceId: silicates
           fraction: 0.7147714187649765
         - resourceId: cobalt
           fraction: 0.2852285812350235
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2426,10 +2456,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 239.70082
-        volumeM3: 6639650.64377112
+        volumeM3: 6634877.364764009
         densityKgM3: 3635.4926222610006
-        initialMassKg: 24138400929.82041
-        remainingMassKg: 24138400929.82041
+        initialMassKg: 24121047709.206062
+        remainingMassKg: 24121047709.206062
         composition:
         - resourceId: iron
           fraction: 0.1767526673835294
@@ -2442,12 +2472,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.13502495964304417
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2464,10 +2495,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 224.65108
-        volumeM3: 3543778.8632252994
+        volumeM3: 3637085.9163147453
         densityKgM3: 2564.610668196593
-        initialMassKg: 9088413078.357199
-        remainingMassKg: 9088413078.357199
+        initialMassKg: 9327709342.128376
+        remainingMassKg: 9327709342.128376
         composition:
         - resourceId: iron
           fraction: 0.41014676548213036
@@ -2476,12 +2507,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.2944758799368836
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2498,22 +2530,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.56177
-        volumeM3: 2714539.048404706
+        volumeM3: 2180904.652710791
         densityKgM3: 2719.5525920107116
-        initialMassKg: 7382331705.203309
-        remainingMassKg: 7382331705.203309
+        initialMassKg: 5931084901.207853
+        remainingMassKg: 5931084901.207853
         composition:
         - resourceId: platinum_group
           fraction: 0.04707553758303362
         - resourceId: silicates
           fraction: 0.9529244624169664
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2530,10 +2563,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 446.1108
-        volumeM3: 32026251.007021885
+        volumeM3: 32297397.502404794
         densityKgM3: 3349.3295244325777
-        initialMassKg: 107266468054.70697
-        remainingMassKg: 107266468054.70697
+        initialMassKg: 108174627017.13937
+        remainingMassKg: 108174627017.13937
         composition:
         - resourceId: platinum_group
           fraction: 0.11093448390958116
@@ -2546,12 +2579,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.4893991570190159
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2568,10 +2602,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 146.37442
-        volumeM3: 770108.5323931623
+        volumeM3: 561665.8913336453
         densityKgM3: 2719.9393660493265
-        initialMassKg: 2094648513.386635
-        remainingMassKg: 2094648513.386635
+        initialMassKg: 1527697168.4055653
+        remainingMassKg: 1527697168.4055653
         composition:
         - resourceId: carbon
           fraction: 0.20309128900376852
@@ -2582,12 +2616,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.1067620573180601
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2604,22 +2639,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.29842
-        volumeM3: 3923527.837566082
+        volumeM3: 3942138.5420346684
         densityKgM3: 3309.6977443045403
-        initialMassKg: 12985691233.708532
-        remainingMassKg: 12985691233.708532
+        initialMassKg: 13047287040.30813
+        remainingMassKg: 13047287040.30813
         composition:
         - resourceId: iron
           fraction: 0.5607809530915562
         - resourceId: silicates
           fraction: 0.4392190469084438
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2636,22 +2672,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 324.69632
-        volumeM3: 17401203.928469468
+        volumeM3: 17412233.829879623
         densityKgM3: 3504.0832540019455
-        initialMassKg: 60975267285.22273
-        remainingMassKg: 60975267285.22273
+        initialMassKg: 61013916978.04735
+        remainingMassKg: 61013916978.04735
         composition:
         - resourceId: carbon
           fraction: 0.37263572870439016
         - resourceId: nickel
           fraction: 0.6273642712956098
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2668,10 +2705,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 353.5476
-        volumeM3: 14560061.39601454
+        volumeM3: 12525352.753191821
         densityKgM3: 3476.830070370137
-        initialMassKg: 50622859288.09875
-        remainingMassKg: 50622859288.09875
+        initialMassKg: 43548523094.29071
+        remainingMassKg: 43548523094.29071
         composition:
         - resourceId: silicates
           fraction: 0.1432232994351772
@@ -2684,12 +2721,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.15526039188289653
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2706,22 +2744,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.29807
-        volumeM3: 6173467.847876905
+        volumeM3: 6150369.056134059
         densityKgM3: 7533.758647658391
-        initialMassKg: 46509416784.98367
-        remainingMassKg: 46509416784.98367
+        initialMassKg: 46335396062.940544
+        remainingMassKg: 46335396062.940544
         composition:
         - resourceId: platinum_group
           fraction: 0.05016561777519542
         - resourceId: iron
           fraction: 0.9498343822248045
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2738,10 +2777,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 877.62823
-        volumeM3: 199924308.04817498
+        volumeM3: 202029756.32294774
         densityKgM3: 2644.6089012694288
-        initialMassKg: 528721604644.33484
-        remainingMassKg: 528721604644.33484
+        initialMassKg: 534289691892.96124
+        remainingMassKg: 534289691892.96124
         composition:
         - resourceId: iron
           fraction: 0.21320794981090702
@@ -2752,12 +2791,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.2432293109176702
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2774,10 +2814,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 235.17378
-        volumeM3: 3847570.1967412587
+        volumeM3: 3448429.2904745787
         densityKgM3: 2754.164568865211
-        initialMassKg: 10596841512.086525
-        remainingMassKg: 10596841512.086525
+        initialMassKg: 9497541770.062084
+        remainingMassKg: 9497541770.062084
         composition:
         - resourceId: carbon
           fraction: 0.3242609670293631
@@ -2788,12 +2828,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.33631281422310666
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2810,10 +2851,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 238.65921
-        volumeM3: 4331215.025559598
+        volumeM3: 4418040.043912615
         densityKgM3: 2833.1851664014944
-        initialMassKg: 12271134162.91072
-        remainingMassKg: 12271134162.91072
+        initialMassKg: 12517125516.981028
+        remainingMassKg: 12517125516.981028
         composition:
         - resourceId: silicates
           fraction: 0.7213866402591009
@@ -2822,12 +2863,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.15761109931638106
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2844,10 +2886,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 258.3778
-        volumeM3: 6467211.3254269
+        volumeM3: 6602202.322808042
         densityKgM3: 2601.4055793518664
-        initialMassKg: 16823839624.813116
-        remainingMassKg: 16823839624.813116
+        initialMassKg: 17175005958.562693
+        remainingMassKg: 17175005958.562693
         composition:
         - resourceId: iron
           fraction: 0.1759043280597815
@@ -2856,12 +2898,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.1458025733977174
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2878,10 +2921,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 338.46313
-        volumeM3: 11134595.229153713
+        volumeM3: 8614865.63101332
         densityKgM3: 4194.111297590961
-        initialMassKg: 46699731644.69601
-        remainingMassKg: 46699731644.69601
+        initialMassKg: 36131705270.26105
+        remainingMassKg: 36131705270.26105
         composition:
         - resourceId: cobalt
           fraction: 0.14780231870254515
@@ -2890,12 +2933,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.5814537632623514
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2912,10 +2956,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 146.22653
-        volumeM3: 615451.3837177505
+        volumeM3: 436155.33031912026
         densityKgM3: 4038.1567068587224
-        initialMassKg: 2485289132.9053154
-        remainingMassKg: 2485289132.9053154
+        initialMassKg: 1761263572.360337
+        remainingMassKg: 1761263572.360337
         composition:
         - resourceId: carbon
           fraction: 0.1679813344404509
@@ -2924,12 +2968,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.5821797316739683
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2946,10 +2991,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.26884
-        volumeM3: 7194137.911438377
+        volumeM3: 7207481.351309385
         densityKgM3: 3284.4679988847715
-        initialMassKg: 23628915749.683075
-        remainingMassKg: 23628915749.683075
+        initialMassKg: 23672741850.934444
+        remainingMassKg: 23672741850.934444
         composition:
         - resourceId: nickel
           fraction: 0.2068361373535947
@@ -2960,12 +3005,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.42232137439447237
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -2982,10 +3028,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 239.0379
-        volumeM3: 6660553.104335755
+        volumeM3: 6632380.906765893
         densityKgM3: 7041.450617720484
-        initialMassKg: 46899955770.885086
-        remainingMassKg: 46899955770.885086
+        initialMassKg: 46701582632.90424
+        remainingMassKg: 46701582632.90424
         composition:
         - resourceId: platinum_group
           fraction: 0.039301135138396864
@@ -2994,12 +3040,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.7256975746698554
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3016,10 +3063,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 615.8184
-        volumeM3: 54383303.91244668
+        volumeM3: 54877255.228328526
         densityKgM3: 2609.4095235919444
-        initialMassKg: 141908311153.53342
-        remainingMassKg: 141908311153.53342
+        initialMassKg: 143197232421.3863
+        remainingMassKg: 143197232421.3863
         composition:
         - resourceId: iridium
           fraction: 0.017283565063529682
@@ -3030,12 +3077,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.44615881978417027
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3052,10 +3100,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 239.70963
-        volumeM3: 4704649.694932978
+        volumeM3: 4760370.868633064
         densityKgM3: 2109.162051529536
-        initialMassKg: 9922868602.292645
-        remainingMassKg: 9922868602.292645
+        initialMassKg: 10040393587.327553
+        remainingMassKg: 10040393587.327553
         composition:
         - resourceId: platinum_group
           fraction: 0.04153467085507501
@@ -3064,12 +3112,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.37615736782211695
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3086,22 +3135,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.27196
-        volumeM3: 3353288.205736687
+        volumeM3: 3411772.7077235035
         densityKgM3: 8405.403792295654
-        initialMassKg: 28185741401.15944
-        remainingMassKg: 28185741401.15944
+        initialMassKg: 28677327255.949947
+        remainingMassKg: 28677327255.949947
         composition:
         - resourceId: platinum_group
           fraction: 0.046059760017847395
         - resourceId: cobalt
           fraction: 0.9539402399821526
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3118,22 +3168,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 219.22176
-        volumeM3: 3525109.9581919643
+        volumeM3: 3270147.468065543
         densityKgM3: 2296.522630621109
-        initialMassKg: 8095494794.415677
-        remainingMassKg: 8095494794.415677
+        initialMassKg: 7509967665.880839
+        remainingMassKg: 7509967665.880839
         composition:
         - resourceId: carbon
           fraction: 0.7069110609152143
         - resourceId: iron
           fraction: 0.2930889390847857
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3150,10 +3201,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 390.93008
-        volumeM3: 23771584.303101316
+        volumeM3: 23619522.51896103
         densityKgM3: 2225.346188107961
-        initialMassKg: 52900004514.19356
-        remainingMassKg: 52900004514.19356
+        initialMassKg: 52561614402.50008
+        remainingMassKg: 52561614402.50008
         composition:
         - resourceId: carbon
           fraction: 0.30825683443824287
@@ -3162,12 +3213,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.19992949227669654
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3184,10 +3236,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.63933
-        volumeM3: 6891722.630182557
+        volumeM3: 6836348.878248
         densityKgM3: 3365.4717998232104
-        initialMassKg: 23193898164.08284
-        remainingMassKg: 23193898164.08284
+        initialMassKg: 23007539363.49668
+        remainingMassKg: 23007539363.49668
         composition:
         - resourceId: platinum_group
           fraction: 0.06767832032565053
@@ -3196,12 +3248,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.4965970133542283
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3218,10 +3271,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 783.5008
-        volumeM3: 151125672.93089938
+        volumeM3: 151645321.00433576
         densityKgM3: 4637.930276765298
-        initialMassKg: 700910334082.748
-        remainingMassKg: 700910334082.748
+        initialMassKg: 703320425615.8014
+        remainingMassKg: 703320425615.8014
         composition:
         - resourceId: platinum_group
           fraction: 0.05955656299986174
@@ -3234,12 +3287,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.18031632040916312
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3256,10 +3310,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 801.8936
-        volumeM3: 181570673.3466352
+        volumeM3: 184547633.32449248
         densityKgM3: 2721.601553679826
-        initialMassKg: 494163026682.8945
-        remainingMassKg: 494163026682.8945
+        initialMassKg: 502265125583.87354
+        remainingMassKg: 502265125583.87354
         composition:
         - resourceId: iron
           fraction: 0.3116274851793782
@@ -3268,12 +3322,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.55012530267467
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3290,10 +3345,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 816.22107
-        volumeM3: 194222852.9747846
+        volumeM3: 197051863.55194214
         densityKgM3: 3186.8717480488503
-        initialMassKg: 618963322970.7867
-        remainingMassKg: 618963322970.7867
+        initialMassKg: 627979016854.0614
+        remainingMassKg: 627979016854.0614
         composition:
         - resourceId: platinum_group
           fraction: 0.04883167920637846
@@ -3304,12 +3359,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.4386500030108066
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3326,10 +3382,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.29842
-        volumeM3: 6036977.421083859
+        volumeM3: 5991104.49204195
         densityKgM3: 2517.2276934349534
-        initialMassKg: 15196446748.993816
-        remainingMassKg: 15196446748.993816
+        initialMassKg: 15080974141.630547
+        remainingMassKg: 15080974141.630547
         composition:
         - resourceId: carbon
           fraction: 0.19382281503044746
@@ -3338,12 +3394,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.21368961136847875
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3360,10 +3417,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 229.18811
-        volumeM3: 6739117.1635161415
+        volumeM3: 6726170.832597564
         densityKgM3: 7394.596014611119
-        initialMassKg: 49833048919.33385
-        remainingMassKg: 49833048919.33385
+        initialMassKg: 49737316032.3195
+        remainingMassKg: 49737316032.3195
         composition:
         - resourceId: iron
           fraction: 0.24013712887465294
@@ -3372,12 +3429,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.4440678181100681
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3394,10 +3452,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 568.8553
-        volumeM3: 69770681.85286002
+        volumeM3: 70675847.84534372
         densityKgM3: 4696.954168689212
-        initialMassKg: 327709694981.0796
-        remainingMassKg: 327709694981.0796
+        initialMassKg: 331961218162.83167
+        remainingMassKg: 331961218162.83167
         composition:
         - resourceId: silicates
           fraction: 0.19540291469793383
@@ -3410,12 +3468,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.27827709498822784
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3432,22 +3491,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.68959
-        volumeM3: 3398484.179067228
+        volumeM3: 3516717.6360459086
         densityKgM3: 7642.206985675616
-        initialMassKg: 25971919533.97563
-        remainingMassKg: 25971919533.97563
+        initialMassKg: 26875484084.83868
+        remainingMassKg: 26875484084.83868
         composition:
         - resourceId: platinum_group
           fraction: 0.0999368187501247
         - resourceId: iron
           fraction: 0.9000631812498753
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3464,10 +3524,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.1306
-        volumeM3: 5541752.691199343
+        volumeM3: 5546272.288626519
         densityKgM3: 3988.1530703750664
-        initialMassKg: 22101358010.665947
-        remainingMassKg: 22101358010.665947
+        initialMassKg: 22119382857.022
+        remainingMassKg: 22119382857.022
         composition:
         - resourceId: iron
           fraction: 0.3163711636272082
@@ -3476,12 +3536,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.4202374709541602
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3498,10 +3559,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 128.52954
-        volumeM3: 1046598.4013361699
+        volumeM3: 1035943.3616233291
         densityKgM3: 3386.6067641717777
-        initialMassKg: 3544417225.336442
-        remainingMassKg: 3544417225.336442
+        initialMassKg: 3508332795.7724166
+        remainingMassKg: 3508332795.7724166
         composition:
         - resourceId: iron
           fraction: 0.2331120843154905
@@ -3514,12 +3575,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.21570779975009546
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3536,10 +3598,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 124.815674
-        volumeM3: 536537.2909352421
+        volumeM3: 542690.9769403624
         densityKgM3: 2164.6564912407184
-        initialMassKg: 1161418929.6156816
-        remainingMassKg: 1161418929.6156816
+        initialMassKg: 1174739545.9717224
+        remainingMassKg: 1174739545.9717224
         composition:
         - resourceId: carbon
           fraction: 0.30846885035755855
@@ -3548,12 +3610,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.12729285146171876
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3570,10 +3633,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 514.69556
-        volumeM3: 29213518.670252796
+        volumeM3: 19418593.40074705
         densityKgM3: 2957.465834468962
-        initialMassKg: 86397983371.89378
-        remainingMassKg: 86397983371.89378
+        initialMassKg: 57429826536.15385
+        remainingMassKg: 57429826536.15385
         composition:
         - resourceId: nickel
           fraction: 0.07128724676536356
@@ -3586,12 +3649,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.40226849583770097
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3608,22 +3672,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 226.82744
-        volumeM3: 4074824.498129148
+        volumeM3: 4070356.3644320294
         densityKgM3: 2493.1235398011386
-        initialMassKg: 10159040876.84414
-        remainingMassKg: 10159040876.84414
+        initialMassKg: 10147901267.544874
+        remainingMassKg: 10147901267.544874
         composition:
         - resourceId: carbon
           fraction: 0.20783253420087125
         - resourceId: silicates
           fraction: 0.7921674657991288
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3640,10 +3705,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 239.18338
-        volumeM3: 5944696.219535696
+        volumeM3: 5901213.5365226865
         densityKgM3: 2968.912429790777
-        initialMassKg: 17649282497.50977
-        remainingMassKg: 17649282497.50977
+        initialMassKg: 17520186219.431793
+        remainingMassKg: 17520186219.431793
         composition:
         - resourceId: silicates
           fraction: 0.45295530549692997
@@ -3654,12 +3719,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.16568480827632248
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3676,22 +3742,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 854.22614
-        volumeM3: 153200955.44603914
+        volumeM3: 155770688.64344206
         densityKgM3: 6153.75930803561
-        initialMassKg: 942761805576.0121
-        remainingMassKg: 942761805576.0121
+        initialMassKg: 958575325158.6985
+        remainingMassKg: 958575325158.6985
         composition:
         - resourceId: iron
           fraction: 0.5441467053631098
         - resourceId: nickel
           fraction: 0.45585329463689017
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3708,10 +3775,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.29842
-        volumeM3: 5918624.1325696865
+        volumeM3: 5902984.137167326
         densityKgM3: 2766.259232166363
-        initialMassKg: 16372448648.443527
-        remainingMassKg: 16372448648.443527
+        initialMassKg: 16329184366.770708
+        remainingMassKg: 16329184366.770708
         composition:
         - resourceId: silicates
           fraction: 0.3637455300685576
@@ -3724,12 +3791,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.04019345081155623
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3746,22 +3814,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 186.5836
-        volumeM3: 3013615.1453816206
+        volumeM3: 3005136.4989617015
         densityKgM3: 4328.397408435361
-        initialMassKg: 13044123985.29136
-        remainingMassKg: 13044123985.29136
+        initialMassKg: 13007425034.100344
+        remainingMassKg: 13007425034.100344
         composition:
         - resourceId: iron
           fraction: 0.7570250813055981
         - resourceId: carbon
           fraction: 0.2429749186944019
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3778,10 +3847,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 248.82239
-        volumeM3: 3830139.2825645357
+        volumeM3: 3899006.788992118
         densityKgM3: 2368.1344579131232
-        initialMassKg: 9070284813.647726
-        remainingMassKg: 9070284813.647726
+        initialMassKg: 9233372328.649437
+        remainingMassKg: 9233372328.649437
         composition:
         - resourceId: carbon
           fraction: 0.3148436532855581
@@ -3790,12 +3859,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.3301538747103574
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3812,22 +3882,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.29842
-        volumeM3: 4685961.270316116
+        volumeM3: 4690512.154452496
         densityKgM3: 2551.7971156831595
-        initialMassKg: 11957622453.795658
-        remainingMassKg: 11957622453.795658
+        initialMassKg: 11969235386.808681
+        remainingMassKg: 11969235386.808681
         composition:
         - resourceId: carbon
           fraction: 0.4624880629777031
         - resourceId: iron
           fraction: 0.5375119370222969
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3844,22 +3915,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 137.57379
-        volumeM3: 1376728.4782774926
+        volumeM3: 1377538.100938058
         densityKgM3: 2537.804014857328
-        initialMassKg: 3493867059.5410404
-        remainingMassKg: 3493867059.5410404
+        initialMassKg: 3495921723.179543
+        remainingMassKg: 3495921723.179543
         composition:
         - resourceId: carbon
           fraction: 0.5113417171165718
         - resourceId: iron
           fraction: 0.48865828288342816
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3876,22 +3948,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 473.14273
-        volumeM3: 36457889.28520656
+        volumeM3: 29230175.075831797
         densityKgM3: 3866.7809410484197
-        initialMassKg: 140974671438.8901
-        remainingMassKg: 140974671438.8901
+        initialMassKg: 113026683886.73494
+        remainingMassKg: 113026683886.73494
         composition:
         - resourceId: nickel
           fraction: 0.6973483668370681
         - resourceId: carbon
           fraction: 0.30265163316293187
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3908,10 +3981,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 795.0688
-        volumeM3: 148332199.67947412
+        volumeM3: 151928706.65034285
         densityKgM3: 3035.646269421829
-        initialMassKg: 450284088592.1294
-        remainingMassKg: 450284088592.1294
+        initialMassKg: 461201811561.1967
+        remainingMassKg: 461201811561.1967
         composition:
         - resourceId: silicates
           fraction: 0.2714943468981065
@@ -3922,12 +3995,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.26923501764650215
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3944,10 +4018,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 329.70056
-        volumeM3: 9095838.264429277
+        volumeM3: 6490608.627859647
         densityKgM3: 4059.3966545178273
-        initialMassKg: 36923615420.65945
-        remainingMassKg: 36923615420.65945
+        initialMassKg: 26347954949.718
+        remainingMassKg: 26347954949.718
         composition:
         - resourceId: carbon
           fraction: 0.2504901893879102
@@ -3956,12 +4030,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.23006721448949619
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -3978,10 +4053,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 213.46083
-        volumeM3: 4740695.651839243
+        volumeM3: 4786196.025347675
         densityKgM3: 3278.55636760301
-        initialMassKg: 15542637916.205454
-        remainingMassKg: 15542637916.205454
+        initialMassKg: 15691813455.499838
+        remainingMassKg: 15691813455.499838
         composition:
         - resourceId: carbon
           fraction: 0.08848481774887379
@@ -3994,12 +4069,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.07333767419696136
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4016,10 +4092,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 799.7323
-        volumeM3: 140227697.21847934
+        volumeM3: 140313197.6110002
         densityKgM3: 4699.345111703706
-        initialMassKg: 658978343449.1282
-        remainingMassKg: 658978343449.1282
+        initialMassKg: 659380139300.7699
+        remainingMassKg: 659380139300.7699
         composition:
         - resourceId: platinum_group
           fraction: 0.13770309903391223
@@ -4028,12 +4104,13 @@ MonoBehaviour:
         - resourceId: carbon
           fraction: 0.16326603543284823
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4050,10 +4127,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 802.893
-        volumeM3: 153490823.9942435
+        volumeM3: 155279847.56871858
         densityKgM3: 2764.6076971355906
-        initialMassKg: 424341913454.1698
-        remainingMassKg: 424341913454.1698
+        initialMassKg: 429287861798.5206
+        remainingMassKg: 429287861798.5206
         composition:
         - resourceId: nickel
           fraction: 0.08225528382996865
@@ -4066,12 +4143,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.47471500019020285
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4088,10 +4166,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 130.23424
-        volumeM3: 686202.3588027676
+        volumeM3: 680772.4927001913
         densityKgM3: 3384.150725904247
-        initialMassKg: 2322212210.6595926
-        remainingMassKg: 2322212210.6595926
+        initialMassKg: 2303836725.3469963
+        remainingMassKg: 2303836725.3469963
         composition:
         - resourceId: iron
           fraction: 0.3186497711075642
@@ -4100,12 +4178,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.4919496972616836
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4122,22 +4201,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 237.85735
-        volumeM3: 4021714.8580451887
+        volumeM3: 4055967.430666095
         densityKgM3: 6896.857270718193
-        initialMassKg: 27737193359.464344
-        remainingMassKg: 27737193359.464344
+        initialMassKg: 27973428463.985645
+        remainingMassKg: 27973428463.985645
         composition:
         - resourceId: platinum_group
           fraction: 0.06201431135801272
         - resourceId: iron
           fraction: 0.9379856886419873
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4154,22 +4234,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.29807
-        volumeM3: 2650743.4339046413
+        volumeM3: 1586183.5287411117
         densityKgM3: 4040.049131470856
-        initialMassKg: 10709133707.898521
-        remainingMassKg: 10709133707.898521
+        initialMassKg: 6408259387.643907
+        remainingMassKg: 6408259387.643907
         composition:
         - resourceId: silicates
           fraction: 0.34373937681221733
         - resourceId: iron
           fraction: 0.6562606231877827
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4186,22 +4267,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.81886
-        volumeM3: 2897110.9062030036
+        volumeM3: 2945654.437859066
         densityKgM3: 7328.282267635952
-        initialMassKg: 21230846481.302197
-        remainingMassKg: 21230846481.302197
+        initialMassKg: 21586587183.545742
+        remainingMassKg: 21586587183.545742
         composition:
         - resourceId: platinum_group
           fraction: 0.08088189516480498
         - resourceId: iron
           fraction: 0.9191181048351951
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4218,10 +4300,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 218.75969
-        volumeM3: 2130452.330364398
+        volumeM3: 1680986.4813745
         densityKgM3: 3068.092370090441
-        initialMassKg: 6536424539.632409
-        remainingMassKg: 6536424539.632409
+        initialMassKg: 5157421797.730281
+        remainingMassKg: 5157421797.730281
         composition:
         - resourceId: carbon
           fraction: 0.22533375159620125
@@ -4232,12 +4314,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.2291612258562883
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4254,22 +4337,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 372.9251
-        volumeM3: 15185258.640835067
+        volumeM3: 11670149.394056072
         densityKgM3: 2888.7121176661867
-        initialMassKg: 43865840645.67543
-        remainingMassKg: 43865840645.67543
+        initialMassKg: 33711701969.584484
+        remainingMassKg: 33711701969.584484
         composition:
         - resourceId: silicates
           fraction: 0.8231368215924803
         - resourceId: nickel
           fraction: 0.17686317840751975
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4286,10 +4370,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 152.4307
-        volumeM3: 895073.223649533
+        volumeM3: 904884.5675553615
         densityKgM3: 3113.343431546618
-        initialMassKg: 2786670341.6025305
-        remainingMassKg: 2786670341.6025305
+        initialMassKg: 2817216424.7063866
+        remainingMassKg: 2817216424.7063866
         composition:
         - resourceId: carbon
           fraction: 0.12776916142676883
@@ -4300,12 +4384,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.18648813496477457
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4322,10 +4407,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 193.26944
-        volumeM3: 1990649.3703001945
+        volumeM3: 1987248.7659693798
         densityKgM3: 3617.227998306116
-        initialMassKg: 7200632637.060303
-        remainingMassKg: 7200632637.060303
+        initialMassKg: 7188331875.863719
+        remainingMassKg: 7188331875.863719
         composition:
         - resourceId: iron
           fraction: 0.2761534103040644
@@ -4336,12 +4421,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.09151204204782348
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4358,10 +4444,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 239.94177
-        volumeM3: 6543095.720111116
+        volumeM3: 6524860.212424737
         densityKgM3: 2860.655233002836
-        initialMassKg: 18717541011.774326
-        remainingMassKg: 18717541011.774326
+        initialMassKg: 18665375511.284824
+        remainingMassKg: 18665375511.284824
         composition:
         - resourceId: carbon
           fraction: 0.24192914519657238
@@ -4372,12 +4458,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.12919601909259737
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4394,10 +4481,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 548.0024
-        volumeM3: 53883060.310527235
+        volumeM3: 47000287.66771191
         densityKgM3: 4601.171407607621
-        initialMassKg: 247925196455.19495
-        remainingMassKg: 247925196455.19495
+        initialMassKg: 216256379766.00916
+        remainingMassKg: 216256379766.00916
         composition:
         - resourceId: nickel
           fraction: 0.29949570760206784
@@ -4408,12 +4495,13 @@ MonoBehaviour:
         - resourceId: iron
           fraction: 0.13584951834880132
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4430,10 +4518,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 205.96404
-        volumeM3: 3864603.3197934274
+        volumeM3: 3865747.1965742386
         densityKgM3: 3677.894042211275
-        initialMassKg: 14213601525.378162
-        remainingMassKg: 14213601525.378162
+        initialMassKg: 14217808582.97533
+        remainingMassKg: 14217808582.97533
         composition:
         - resourceId: carbon
           fraction: 0.21011255948118324
@@ -4444,12 +4532,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.24847309659136885
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4466,10 +4555,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 722.92664
-        volumeM3: 128871734.39981438
+        volumeM3: 130879487.86002326
         densityKgM3: 2707.9617452975335
-        initialMassKg: 348979726804.84155
-        remainingMassKg: 348979726804.84155
+        initialMassKg: 354416646369.0759
+        remainingMassKg: 354416646369.0759
         composition:
         - resourceId: carbon
           fraction: 0.20452974851889952
@@ -4478,12 +4567,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.4327843167595571
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4500,22 +4590,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 236.81538
-        volumeM3: 3810762.4873969965
+        volumeM3: 3859893.8823236185
         densityKgM3: 1787.0256044500593
-        initialMassKg: 6809930137.456229
-        remainingMassKg: 6809930137.456229
+        initialMassKg: 6897729198.17245
+        remainingMassKg: 6897729198.17245
         composition:
         - resourceId: platinum_group
           fraction: 0.07374290301480357
         - resourceId: carbon
           fraction: 0.9262570969851964
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4532,22 +4623,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.25366
-        volumeM3: 5744969.491425425
+        volumeM3: 5801658.810480743
         densityKgM3: 1986.5824158459943
-        initialMassKg: 11412855371.237453
-        remainingMassKg: 11412855371.237453
+        initialMassKg: 11525473375.639032
+        remainingMassKg: 11525473375.639032
         composition:
         - resourceId: carbon
           fraction: 0.32410471866512697
         - resourceId: silicates
           fraction: 0.6758952813348731
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4564,10 +4656,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.29842
-        volumeM3: 5891240.7936037695
+        volumeM3: 5888350.681081465
         densityKgM3: 7558.1044418618685
-        initialMassKg: 44526613210.21449
-        remainingMassKg: 44526613210.21449
+        initialMassKg: 44504769437.92218
+        remainingMassKg: 44504769437.92218
         composition:
         - resourceId: iron
           fraction: 0.45682908158727037
@@ -4576,12 +4668,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.16430034269548988
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4598,10 +4691,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.24641
-        volumeM3: 5032051.512403109
+        volumeM3: 4997115.620630604
         densityKgM3: 2832.443815231014
-        initialMassKg: 14253003184.230057
-        remainingMassKg: 14253003184.230057
+        initialMassKg: 14154049233.649445
+        remainingMassKg: 14154049233.649445
         composition:
         - resourceId: carbon
           fraction: 0.2721515406862897
@@ -4614,12 +4707,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.20478645536353446
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4636,22 +4730,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 148.5731
-        volumeM3: 1334208.3458784106
+        volumeM3: 1328081.4117619381
         densityKgM3: 2287.5657791180297
-        initialMassKg: 3052089354.245124
-        remainingMassKg: 3052089354.245124
+        initialMassKg: 3038073589.429371
+        remainingMassKg: 3038073589.429371
         composition:
         - resourceId: carbon
           fraction: 0.4549026674214278
         - resourceId: silicates
           fraction: 0.5450973325785722
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4668,10 +4763,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 843.6089
-        volumeM3: 258087885.78183687
+        volumeM3: 263447927.4335325
         densityKgM3: 2532.9365706203444
-        initialMassKg: 653720244330.901
-        remainingMassKg: 653720244330.901
+        initialMassKg: 667296889850.5292
+        remainingMassKg: 667296889850.5292
         composition:
         - resourceId: carbon
           fraction: 0.2990354964856364
@@ -4680,12 +4775,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.4452762493318779
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4702,10 +4798,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 844.0093
-        volumeM3: 251368622.50890312
+        volumeM3: 253392303.10894313
         densityKgM3: 4153.295299095818
-        initialMassKg: 1044008118206.4186
-        remainingMassKg: 1044008118206.4186
+        initialMassKg: 1052413061329.4363
+        remainingMassKg: 1052413061329.4363
         composition:
         - resourceId: iron
           fraction: 0.12115433700186498
@@ -4716,12 +4812,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.2544406463101172
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4738,10 +4835,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 873.3609
-        volumeM3: 217208606.93729547
+        volumeM3: 219728630.95715126
         densityKgM3: 4227.89146038731
-        initialMassKg: 918334414392.8153
-        remainingMassKg: 918334414392.8153
+        initialMassKg: 928988802426.3346
+        remainingMassKg: 928988802426.3346
         composition:
         - resourceId: iron
           fraction: 0.4342736318070354
@@ -4750,12 +4847,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.26691425120317636
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4772,10 +4870,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 241.29634
-        volumeM3: 4186613.3768059243
+        volumeM3: 4207293.403857629
         densityKgM3: 5008.618774714521
-        initialMassKg: 20969150361.541115
-        remainingMassKg: 20969150361.541115
+        initialMassKg: 21072728733.293884
+        remainingMassKg: 21072728733.293884
         composition:
         - resourceId: nickel
           fraction: 0.2185283234634603
@@ -4786,12 +4884,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.2851501926040254
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4808,22 +4907,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 241.24629
-        volumeM3: 7443399.141621842
+        volumeM3: 7420372.742944207
         densityKgM3: 2160.02793508517
-        initialMassKg: 16077950077.892155
-        remainingMassKg: 16077950077.892155
+        initialMassKg: 16028212413.504055
+        remainingMassKg: 16028212413.504055
         composition:
         - resourceId: carbon
           fraction: 0.27257134743068745
         - resourceId: silicates
           fraction: 0.7274286525693126
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4840,10 +4940,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 677.0257
-        volumeM3: 102440383.48612124
+        volumeM3: 104165225.81439339
         densityKgM3: 4024.626562639636
-        initialMassKg: 412284288465.23425
-        remainingMassKg: 412284288465.23425
+        initialMassKg: 419226134715.96356
+        remainingMassKg: 419226134715.96356
         composition:
         - resourceId: nickel
           fraction: 0.1779950836896634
@@ -4856,12 +4956,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.11403753537042038
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4878,10 +4979,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 2
         diameterMeters: 795.40857
-        volumeM3: 176523367.4563511
+        volumeM3: 180322778.6217873
         densityKgM3: 2024.6411212636833
-        initialMassKg: 357396468616.0679
-        remainingMassKg: 357396468616.0679
+        initialMassKg: 365088912698.1984
+        remainingMassKg: 365088912698.1984
         composition:
         - resourceId: silicates
           fraction: 0.5895489327543324
@@ -4890,12 +4991,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.08454376343634373
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4912,22 +5014,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 854.00824
-        volumeM3: 200094737.42082486
+        volumeM3: 200758585.96552542
         densityKgM3: 3913.285405185957
-        initialMassKg: 783027815603.4303
-        remainingMassKg: 783027815603.4303
+        initialMassKg: 785625644424.661
+        remainingMassKg: 785625644424.661
         composition:
         - resourceId: nickel
           fraction: 0.4663745363735819
         - resourceId: silicates
           fraction: 0.5336254636264182
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4944,22 +5047,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 754.1766
-        volumeM3: 124852306.64717098
+        volumeM3: 127589016.38044208
         densityKgM3: 2998.4323095972336
-        initialMassKg: 374361190178.6189
-        remainingMassKg: 374361190178.6189
+        initialMassKg: 382567029064.8482
+        remainingMassKg: 382567029064.8482
         composition:
         - resourceId: nickel
           fraction: 0.5895079235280509
         - resourceId: carbon
           fraction: 0.4104920764719491
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -4976,10 +5080,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 134.7569
-        volumeM3: 775343.5797905371
+        volumeM3: 780171.422372397
         densityKgM3: 3483.5717615074077
-        initialMassKg: 2700965000.0243807
-        remainingMassKg: 2700965000.0243807
+        initialMassKg: 2717783136.111551
+        remainingMassKg: 2717783136.111551
         composition:
         - resourceId: iron
           fraction: 0.12747402492811574
@@ -4992,12 +5096,13 @@ MonoBehaviour:
         - resourceId: cobalt
           fraction: 0.13345350468535055
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -5014,22 +5119,23 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 3
         diameterMeters: 240.7696
-        volumeM3: 3392276.789830389
+        volumeM3: 3430942.3503827583
         densityKgM3: 3614.978281943829
-        initialMassKg: 12263006921.578987
-        remainingMassKg: 12263006921.578987
+        initialMassKg: 12402782083.234987
+        remainingMassKg: 12402782083.234987
         composition:
         - resourceId: silicates
           fraction: 0.5770980597622446
         - resourceId: nickel
           fraction: 0.4229019402377554
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -5046,10 +5152,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 177.1597
-        volumeM3: 1763604.442748108
+        volumeM3: 1759580.5979380643
         densityKgM3: 4295.3387887694125
-        initialMassKg: 7575278570.982013
-        remainingMassKg: 7575278570.982013
+        initialMassKg: 7557994794.289444
+        remainingMassKg: 7557994794.289444
         composition:
         - resourceId: cobalt
           fraction: 0.13015467031573844
@@ -5062,12 +5168,13 @@ MonoBehaviour:
         - resourceId: nickel
           fraction: 0.2085702274904514
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
@@ -5084,10 +5191,10 @@ MonoBehaviour:
         generatorVersion: 8
         asteroidClass: 1
         diameterMeters: 156.68425
-        volumeM3: 1806260.8666043708
+        volumeM3: 1799980.3140505177
         densityKgM3: 2950.5124675188044
-        initialMassKg: 5329395206.507516
-        remainingMassKg: 5329395206.507516
+        initialMassKg: 5310864357.894465
+        remainingMassKg: 5310864357.894465
         composition:
         - resourceId: iron
           fraction: 0.2661406392482321
@@ -5100,12 +5207,13 @@ MonoBehaviour:
         - resourceId: silicates
           fraction: 0.3860412506957086
         geometryProfile:
-          shapeIrregularity: 0.716
-          craterIntensity: 0.507
-          surfaceRoughness: 0.311
-          minCraters: 6
-          maxCraters: 32
-          minimumAxisScale: 0.68
+          shapeIrregularity: 0.55
+          shapePreset: 0
+          craterIntensity: 0.55
+          surfaceRoughness: 0.45
+          minCraters: 2
+          maxCraters: 12
+          minimumAxisScale: 0.5
           iceShelf: 0
           continentalShelf: 0
           shelfThicknessRatio: 0
