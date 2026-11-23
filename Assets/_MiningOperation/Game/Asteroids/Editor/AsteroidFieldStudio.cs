@@ -255,7 +255,7 @@ namespace MiningOperation.Asteroids.Editor
                 Prop(so, "thicknessMeters", "Vertical spread (m)");
                 Prop(so, "gasCloudCount", "Cloud clusters");
                 Prop(so, "gasCloudRadiusMeters", "Cloud radius (m)");
-                EditorGUILayout.HelpBox("Environmental gas clouds are visual only. They contain NO harvestable gas. Gas is produced by industrial systems, not collected here. One particle renderer per location.", MessageType.None);
+                EditorGUILayout.HelpBox("Environmental gas clouds are visual only. Gas is produced by industrial systems, not collected here. Select SoftParticles, Volumetric or GroundFog in VISUALS.", MessageType.None);
                 if (selected.Controller != null && selected.Controller.Snapshot != null)
                 {
                     EditorGUILayout.HelpBox("A saved asteroid field also exists here. It stays untouched and is not rendered in Gas mode.", MessageType.Warning);
@@ -506,12 +506,24 @@ namespace MiningOperation.Asteroids.Editor
             {
                 Header("Gas cloud appearance — this spawn");
                 Prop(local, "gasPresentation", "Rendering mode");
-                bool volumeMode = local.FindProperty("gasPresentation").enumValueIndex == (int)MOGasPresentation.Volumetric;
+                var presentation = (MOGasPresentation)local.FindProperty("gasPresentation").enumValueIndex;
+                bool volumeMode = presentation != MOGasPresentation.SoftParticles;
                 if (volumeMode)
                 {
                     Prop(local, "gasVolumeSteps", "Raymarch samples");
                     Prop(local, "gasVolumeNoiseScale", "3D noise scale");
                     Prop(local, "gasVolumeBrightness", "Brightness");
+                    if (presentation == MOGasPresentation.GroundFog)
+                    {
+                        EditorGUILayout.Space(6f);
+                        Header("Ground fog / absolute world height");
+                        Prop(local, "groundFogFloorY", "Base world Y (m)");
+                        Prop(local, "groundFogHeightMeters", "Height (m)");
+                        Prop(local, "groundFogRadiusMultiplier", "Horizontal radius multiplier");
+                        Prop(local, "groundFogTopSoftness", "Soft upper fade");
+                        Prop(local, "groundFogLights", "Local fog lights (up to 4)");
+                        EditorGUILayout.HelpBox("Visual mode only. Fog is flattened on WORLD Y, not Spawn Point Y. The original cloud records and gas materials are preserved.", MessageType.Info);
+                    }
                 }
                 else
                 {
@@ -624,7 +636,7 @@ namespace MiningOperation.Asteroids.Editor
             if (selected.contentType == MiningFieldContent.Gas)
             {
                 if (gasPreview != null) GUILayout.Label(gasPreview.clouds.Count + " gas clusters / " +
-                    selected.gasCloudCount * selected.gasPuffsPerCloud + " visual puffs", EditorStyles.miniLabel);
+                    (selected.gasPresentation == MOGasPresentation.SoftParticles ? selected.gasCloudCount * selected.gasPuffsPerCloud + " visual puffs" : selected.gasPresentation.ToString()), EditorStyles.miniLabel);
             }
             else if (rocks.Count > 0)
                 GUILayout.Label(rocks.Count + " planned asteroids / " + selected.ResolveCount() + " requested", EditorStyles.miniLabel);
@@ -814,7 +826,8 @@ namespace MiningOperation.Asteroids.Editor
             if (invalid != null) { lastError = invalid; return; }
             if (field == null) { lastError = "Field Settings are required for the gas material."; return; }
             if (field.gasParticleMaterial == null ||
-                (selected.gasPresentation == MOGasPresentation.Volumetric && field.gasVolumeMaterial == null))
+                (selected.gasPresentation == MOGasPresentation.Volumetric && field.gasVolumeMaterial == null) ||
+                (selected.gasPresentation == MOGasPresentation.GroundFog && field.groundFogMaterial == null))
             {
                 if (!MOVisualAssetInstaller.Install(field)) return;
             }
