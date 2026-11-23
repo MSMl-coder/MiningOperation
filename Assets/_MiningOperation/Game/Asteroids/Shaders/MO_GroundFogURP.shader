@@ -11,6 +11,8 @@ Shader "MiningOperation/GroundFogURP"
         _GasDrift ("Drift", Range(0, 1)) = 0.12
         _GasSteps ("Ray Steps", Range(6, 24)) = 16
         _FogTopSoftness ("Top Softness", Range(0.15, 0.95)) = 0.7
+        _FogBreakup ("Cloud Shape Irregularity", Range(0, 1)) = 0.75
+        _FogCutouts ("Cloud Gaps", Range(0, 1)) = 0.5
         _GasLightDirection ("Directional Light", Vector) = (-0.42, 0.71, -0.56, 0)
         _GasLightColor ("Light Color", Color) = (0.5, 0.6, 0.65, 1)
     }
@@ -43,6 +45,8 @@ Shader "MiningOperation/GroundFogURP"
                 float _GasDrift;
                 float _GasSteps;
                 float _FogTopSoftness;
+                float _FogBreakup;
+                float _FogCutouts;
                 float4 _GasLightDirection;
                 half4 _GasLightColor;
             CBUFFER_END
@@ -142,13 +146,24 @@ Shader "MiningOperation/GroundFogURP"
                     float t = enter + (i+.5)*stepLength;
                     float3 worldP = origin + ray*t;
                     float3 q = (worldP-center)/radii;
-                    float radial = length(q.xz);
-                    float noisy = ValueNoise(float3(q.x*3.4,q.y*2.1,q.z*3.4)*_GasNoiseScale + seed + drift);
-                    float edge = 1-smoothstep(.60,1.0,radial+(noisy-.5)*_GasContrast*.22);
+                    // Two spatial frequencies instead of a single smooth density field:
+                    // billowing large structures plus smaller broken pockets.
+                    float broad = ValueNoise(q * (2.7 * _GasNoiseScale) + seed + drift);
+                    float detail = ValueNoise(q * (8.4 * _GasNoiseScale) + seed * 1.73 - drift * 1.7);
+                    float structure = lerp(broad, broad * .72 + detail * .28, _GasContrast);
+                    // Distort the cloud silhouette and break the uniform grey interior.
+                    float distortedRadius = length(q) + (broad-.5)*_FogBreakup*.50;
+                    float edge = 1-smoothstep(.61, .995, distortedRadius);
+                    float cutThreshold = lerp(.20, .58, _FogCutouts);
+                    float gaps = smoothstep(cutThreshold, cutThreshold+.23, structure);
                     float normalizedHeight = saturate(q.y*.5+.5);
-                    float heightFade = 1-smoothstep(1-_FogTopSoftness,1,normalizedHeight);
-                    float bottomFade = smoothstep(0,.15,normalizedHeight);
-                    float density = edge*heightFade*bottomFade*lerp(.68,saturate(noisy*1.35),_GasContrast)*input.visual.x;
+                    // Vary the ceiling per XZ location: billowing top, not a horizontal slab.
+                    float localTop = saturate(.62 + broad*.34 + detail*.10);
+                    float softWidth = max(.035, _FogTopSoftness * .32);
+                    float heightFade = 1-smoothstep(localTop-softWidth, localTop, normalizedHeight);
+                    float bottomFade = smoothstep(0,.13,normalizedHeight);
+                    float body = lerp(.75, gaps, _FogBreakup);
+                    float density = edge * heightFade * bottomFade * body * input.visual.x;
                     if (density<.0001) continue;
                     float extinction = density*_GasOpacity*(stepLength/max(radii.y*2,1))*2.8;
                     float alpha = 1-exp(-extinction);
@@ -163,7 +178,7 @@ Shader "MiningOperation/GroundFogURP"
                         atten *= atten;
                         lighting += _FogLightColors[l].rgb * atten;
                     }
-                    float3 tint = lerp(_GasColorA.rgb,_GasColorB.rgb,saturate(noisy*.65+radial*.3));
+                    float3 tint = lerp(_GasColorA.rgb,_GasColorB.rgb,saturate(structure*.7 + length(q.xz)*.2));
                     colorSum += transmittance*alpha*tint*lighting*_GasBrightness;
                     transmittance *= (1-alpha);
                     if(transmittance<.02) break;
