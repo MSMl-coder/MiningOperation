@@ -534,35 +534,6 @@ namespace MiningOperation.Asteroids.Editor
                             Prop(local, "groundFogBreakup", "Cloud shape irregularity");
                             Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
                             EditorGUILayout.HelpBox("FAST surface: one top-facing cloud mesh per location, one 2D noise texture sample per pixel. No ray marching or overlapping volumetric shells. Best for a camera above fog. Old volumetric appearance is still available under Quality = VolumetricCloudlets.", MessageType.Info);
-                            if (selected.settings != null &&
-                                (selected.settings.groundFogFastMaterial == null ||
-                                 selected.settings.groundFogFastMaterial.shader == null ||
-                                 !selected.settings.groundFogFastMaterial.shader.isSupported))
-                            {
-                                if (GUILayout.Button("INSTALL FAST FOG MATERIAL (keep existing layout)"))
-                                {
-                                    var anchorForInstall = selected;
-                                    EditorApplication.delayCall += () =>
-                                    {
-                                        if (anchorForInstall == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
-                                        try
-                                        {
-                                            if (MOVisualAssetInstaller.Install(anchorForInstall.settings))
-                                            {
-                                                var gasRenderer = anchorForInstall.GetComponent<MOGasFieldRenderer>();
-                                                if (gasRenderer != null && gasRenderer.Snapshot != null)
-                                                {
-                                                    gasRenderer.RebuildVisuals();
-                                                    EditorUtility.SetDirty(gasRenderer);
-                                                }
-                                                if (anchorForInstall.gameObject.scene.IsValid())
-                                                    EditorSceneManager.MarkSceneDirty(anchorForInstall.gameObject.scene);
-                                            }
-                                        }
-                                        catch (Exception ex) { Debug.LogException(ex, anchorForInstall); }
-                                    };
-                                }
-                            }
                         }
                         else
                         {
@@ -587,7 +558,25 @@ namespace MiningOperation.Asteroids.Editor
                 Prop(local, "gasColorB", "Color B");
                 Prop(local, "gasLayerContrast", "Layer irregularity");
                 Prop(local, "gasDriftStrength", "Gentle drift");
-                EditorGUILayout.HelpBox("Gas appearance is per Spawn Point and does not affect other clouds. Gas is not harvestable. Material overrides are assigned on the Spawn Point Inspector.", MessageType.None);
+                EditorGUILayout.Space(5f);
+                Header("Fast Ground Fog assets / repair");
+                Material sharedFast = selected.settings != null ? selected.settings.groundFogFastMaterial : null;
+                EditorGUILayout.ObjectField("Shared fast material", sharedFast, typeof(Material), false);
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode ||
+                    selected.settings == null))
+                {
+                    if (GUILayout.Button("INSTALL / REPAIR FAST FOG MATERIAL (keeps cloud layout)", GUILayout.Height(27f)))
+                    {
+                        var anchorForRepair = selected;
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (anchorForRepair != null) MOGroundFogAssetRepair.Repair(anchorForRepair);
+                        };
+                    }
+                }
+                if (selected.settings == null)
+                    EditorGUILayout.HelpBox("Field Settings is not assigned. Assign it on LOCATION before installing material.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Fast fog material is stored on shared Field Settings, not necessarily in the local override slot. Installation preserves all saved gas records.", MessageType.None);
             }
             else
             {
