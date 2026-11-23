@@ -16,6 +16,8 @@ Shader "Mining Operation/Asteroid Textured Surface"
         _Exposure ("Surface exposure", Range(0.4,1.7)) = 1.0
         _ColorVariation ("Per-asteroid tonal variation", Range(0,0.3)) = 0.08
         _DetailFadeStart ("Normal detail fade pixel footprint", Range(0.002,0.1)) = 0.022
+        [Enum(Off,0,MainLightOnly,1,ShadedNormals,2,RawAlbedo,3,MeshNormals,4)]
+        _MO_DebugLighting ("Lighting Debug View", Float) = 0
         [HideInInspector] _MO_ObjectRadius ("Object Radius", Float) = 1
         [HideInInspector] _MO_SurfaceSeed ("Seed", Float) = 0
         [HideInInspector] _MO_LODVisibility ("LOD Visibility", Range(0,1)) = 1
@@ -35,6 +37,10 @@ Shader "Mining Operation/Asteroid Textured Surface"
             #pragma multi_compile_instancing
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
+            // PC_Renderer uses URP Forward+ (m_RenderingMode = 2).
+            // Without this variant UniversalFragmentPBR omits Forward+ light clusters,
+            // including the second directional / localized fill lights.
+            #pragma multi_compile _ _FORWARD_PLUS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -49,7 +55,7 @@ Shader "Mining Operation/Asteroid Textured Surface"
                 float _TextureFrequency, _TriplanarSharpness, _NormalStrength;
                 float _SmoothnessMultiplier, _MetallicMultiplier, _AOInfluence;
                 float _ColorVariation, _DetailFadeStart, _AmbientFloor, _Exposure;
-                float _MO_ObjectRadius, _MO_SurfaceSeed, _MO_LODVisibility;
+                float _MO_ObjectRadius, _MO_SurfaceSeed, _MO_LODVisibility, _MO_DebugLighting;
             CBUFFER_END
 
             struct Attributes
@@ -155,6 +161,27 @@ Shader "Mining Operation/Asteroid Textured Surface"
                 surfaceData.normalTS = half3(0, 0, 1);
                 surfaceData.occlusion = lerp(1.0, mask.r, saturate(_AOInfluence));
                 surfaceData.alpha = 1.0;
+
+                // Temporary material-only diagnostics for comparing a baked asteroid
+                // with Unity URP/Lit under the EXACT same light. Default is Off.
+                // No material or scene mutation is required to switch between views.
+                if (_MO_DebugLighting > 0.5)
+                {
+                    if (_MO_DebugLighting < 1.5)
+                    {
+                        Light sun = GetMainLight(inputData.shadowCoord);
+                        float ndl = saturate(dot(normalWS, sun.direction));
+                        return half4(sun.color.rgb * ndl *
+                            sun.distanceAttenuation * sun.shadowAttenuation, 1.0);
+                    }
+                    if (_MO_DebugLighting < 2.5)
+                        return half4(normalWS * .5 + .5, 1.0);
+                    if (_MO_DebugLighting < 3.5)
+                        return half4(albedo, 1.0);
+                    float3 geometricNormalWS = normalize(TransformObjectToWorldNormal(baseNormalOS));
+                    return half4(geometricNormalWS * .5 + .5, 1.0);
+                }
+
                 return UniversalFragmentPBR(inputData, surfaceData);
             }
             ENDHLSL
@@ -176,7 +203,7 @@ Shader "Mining Operation/Asteroid Textured Surface"
                 float _TextureFrequency, _TriplanarSharpness, _NormalStrength;
                 float _SmoothnessMultiplier, _MetallicMultiplier, _AOInfluence;
                 float _ColorVariation, _DetailFadeStart, _AmbientFloor, _Exposure;
-                float _MO_ObjectRadius, _MO_SurfaceSeed, _MO_LODVisibility;
+                float _MO_ObjectRadius, _MO_SurfaceSeed, _MO_LODVisibility, _MO_DebugLighting;
             CBUFFER_END
             struct DepthAttributes { float4 positionOS : POSITION; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct DepthVaryings
