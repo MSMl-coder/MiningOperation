@@ -36,6 +36,8 @@ namespace MiningOperation.Asteroids
         public Material gasVolumeMaterial;
         [Tooltip("Optional URP ground-fog volume material, independent of GasVolumeURP.")]
         public Material groundFogMaterial;
+        [Tooltip("Fast one-mesh URP ground fog surface; does not use raymarching.")]
+        public Material groundFogFastMaterial;
         [Header("V2.1.1 - safe materials and streaming")]
         [Tooltip("OFF = use stable URP/Lit for near, far and debris. Enable only after validating custom shaders in Game view.")]
         public bool allowExperimentalRockShaders = false;
