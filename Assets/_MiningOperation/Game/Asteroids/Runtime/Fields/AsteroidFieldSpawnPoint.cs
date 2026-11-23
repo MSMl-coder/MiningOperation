@@ -15,6 +15,8 @@ namespace MiningOperation.Asteroids
     }
     // Zero preserves the stable v2.3.x particle presentation for existing scenes.
     public enum MOGasPresentation { SoftParticles = 0, Volumetric = 1, GroundFog = 2 }
+    // 0 is the low-cost surface and is also the default for existing GroundFog scenes.
+    public enum MOGroundFogQuality { FastSurface = 0, VolumetricCloudlets = 1 }
 
     /// <summary>
     /// Attach to an EMPTY scene object. Every anchor owns an independent field ID, seed,
@@ -53,6 +55,9 @@ namespace MiningOperation.Asteroids
         [Min(100f)] public float gasVisibilityDistanceMeters = 14000f;
 
         [Header("Ground Fog (when Gas Rendering Mode = GroundFog)")]
+        [Tooltip("FastSurface: one low-cost mesh, preferred. VolumetricCloudlets: old expensive raymarch method.")]
+        public MOGroundFogQuality groundFogQuality = MOGroundFogQuality.FastSurface;
+        [Range(24, 160)] public int groundFogSurfaceResolution = 96;
         [Tooltip("World-space Y level for the base of the fog. Independent of this Spawn Point's height.")]
         public float groundFogFloorY = 0f;
         [Min(5f)] public float groundFogHeightMeters = 180f;
@@ -351,6 +356,7 @@ namespace MiningOperation.Asteroids
             groundFogRadiusMultiplier = Mathf.Clamp(groundFogRadiusMultiplier, 0.5f, 3f);
             groundFogTopSoftness = Mathf.Clamp(groundFogTopSoftness, 0.15f, 0.95f);
             groundFogCloudletsPerCluster = Mathf.Clamp(groundFogCloudletsPerCluster, 1, 24);
+            groundFogSurfaceResolution = Mathf.Clamp(groundFogSurfaceResolution, 24, 160);
             groundFogHeightVariation = Mathf.Clamp01(groundFogHeightVariation);
             groundFogCloudletSpread = Mathf.Clamp01(groundFogCloudletSpread);
             groundFogBreakup = Mathf.Clamp01(groundFogBreakup);
