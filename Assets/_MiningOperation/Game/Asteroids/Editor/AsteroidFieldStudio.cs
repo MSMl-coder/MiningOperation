@@ -233,7 +233,7 @@ namespace MiningOperation.Asteroids.Editor
                 EditorGUILayout.PropertyField(type, new GUIContent("Type"));
                 GUILayout.FlexibleSpace();
             }
-            EditorGUILayout.PropertyField(so.FindProperty("settings"), new GUIContent("Shared library / defaults"));
+            EditorGUILayout.PropertyField(so.FindProperty("settings"), new GUIContent("Formation settings (individual asset)"));
             EditorGUILayout.PropertyField(so.FindProperty("fieldSeed"), new GUIContent("Seed"));
             EditorGUILayout.PropertyField(so.FindProperty("fieldId"), new GUIContent("Persistent ID"));
             using (new EditorGUI.DisabledScope(selected.settings == null || EditorApplication.isPlayingOrWillChangePlaymode))
@@ -902,52 +902,62 @@ namespace MiningOperation.Asteroids.Editor
         {
             if (field == null || !AsteroidAuthoringWorkflow.IsReady(field))
             {
-                // Prefer an existing loaded settings asset over duplicating persistent assets.
-                var guid = AssetDatabase.FindAssets("t:AsteroidFieldSettings", new[] { "Assets/_MiningOperation" });
+                // Choose a template, not the settings asset that will be assigned
+                // to the new field. The new field always receives its own copy.
+                var ids = AssetDatabase.FindAssets("t:AsteroidFieldSettings", new[] { "Assets/_MiningOperation" });
                 AsteroidFieldSettings candidate = null;
-                foreach (string id in guid)
+                foreach (string id in ids)
                 {
                     var found = AssetDatabase.LoadAssetAtPath<AsteroidFieldSettings>(AssetDatabase.GUIDToAssetPath(id));
                     if (!AsteroidAuthoringWorkflow.IsReady(found)) continue;
-                    if (candidate != null) { candidate = null; break; } // ambiguous: do not guess
+                    if (candidate != null) { candidate = null; break; }
                     candidate = found;
                 }
                 if (candidate == null)
                 {
-                    EditorUtility.DisplayDialog("Select shared settings",
-                        "Assign an existing, working Field Settings asset on a Spawn Point first. " +
-                        "If assets show Script: None, repair them before creating new configurations.", "OK");
+                    EditorUtility.DisplayDialog("Select Field Settings template",
+                        "Select a Spawn Point with working Field Settings first. " +
+                        "The new formation will automatically receive its own copy. " +
+                        "If assets have broken scripts, repair them rather than duplicating broken data.", "OK");
                     return;
                 }
                 field = candidate;
             }
-            if (newKind == MiningFieldContent.Ice || newKind == MiningFieldContent.IceShelf ||
-                newKind == MiningFieldContent.Gas)
+
+            AsteroidFieldSpawnPoint anchor;
+            try
             {
-                try
-                {
-                    if (newKind == MiningFieldContent.Gas) MOVisualAssetInstaller.Install(field);
-                    else
-                    {
-                        MOVisualAssetInstaller.InstallIceResources(field);
-                        MOUnifiedAsteroidAssetTools.EnsureShared(field);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    EditorUtility.DisplayDialog("Material setup failed", ex.Message, "OK");
-                    return;
-                }
+                anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field, newKind);
             }
-            AsteroidFieldSpawnPoint anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field);
-            Undo.RecordObject(anchor, "Set new field type");
-            anchor.contentType = newKind;
-            if (newKind == MiningFieldContent.IceShelf) anchor.formation = AsteroidFormationType.IceShelfContinents;
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                EditorUtility.DisplayDialog("Create formation failed", ex.Message, "OK");
+                return;
+            }
+
             if (newKind == MiningFieldContent.Gas)
                 anchor.gasPresentation = MOGasPresentation.Volumetric;
-            anchor.gameObject.name = newKind + " Spawn Point";
             anchor.SyncToController();
-            EditorUtility.SetDirty(anchor);
+
+            // Install optional gas/ice resources only on the newly-owned settings.
+            // Never mutate the old Spawn Point's source asset during formation creation.
+            try
+            {
+                if (newKind == MiningFieldContent.Gas)
+                    MOVisualAssetInstaller.Install(anchor.settings);
+                else if (newKind == MiningFieldContent.Ice || newKind == MiningFieldContent.IceShelf)
+                {
+                    MOVisualAssetInstaller.InstallIceResources(anchor.settings);
+                    MOUnifiedAsteroidAssetTools.EnsureShared(anchor.settings);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[MO] Formation created with its own settings, but optional visual setup " +
+                                 "requires repair: " + ex.Message, anchor);
+            }
+
             SelectAnchor(anchor);
         }
         private void CreateSetup()
@@ -997,12 +1007,11 @@ namespace MiningOperation.Asteroids.Editor
                 SelectAnchor(selected);
                 return;
             }
-            var anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field);
-            anchor.contentType = newKind;
-            if (newKind == MiningFieldContent.IceShelf) anchor.formation = AsteroidFormationType.IceShelfContinents;
+            // The first-time setup already created a brand-new Field Settings asset.
+            // Use it for this first formation, instead of making an orphan template.
+            var anchor = AsteroidAuthoringWorkflow.CreateSpawnPoint(field, newKind, reuseFirstSetupAsset: true);
             if (newKind == MiningFieldContent.Gas)
                 anchor.gasPresentation = MOGasPresentation.Volumetric;
-            anchor.gameObject.name = newKind + " Spawn Point";
             anchor.SyncToController();
             SelectAnchor(anchor);
         }
