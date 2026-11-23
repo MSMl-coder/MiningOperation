@@ -200,9 +200,13 @@ namespace MiningOperation.Asteroids
             {
                 foreach (var cloud in snapshot.clouds)
                 {
-                    float worldRadius = cloud.radiusMeters * MaxScale(transform.lossyScale);
-                    if (Vector3.Distance(camera.transform.position,
-                            transform.TransformPoint(cloud.localCenter)) <= drawDistance + worldRadius)
+                    bool ground = anchor.gasPresentation == MOGasPresentation.GroundFog;
+                    float worldRadius = ground
+                        ? cloud.radiusMeters * anchor.groundFogRadiusMultiplier
+                        : cloud.radiusMeters * MaxScale(transform.lossyScale);
+                    Vector3 worldCenter = transform.TransformPoint(cloud.localCenter);
+                    if (ground) worldCenter.y = anchor.groundFogFloorY + anchor.groundFogHeightMeters * 0.5f;
+                    if (Vector3.Distance(camera.transform.position, worldCenter) <= drawDistance + worldRadius)
                     {
                         visible = true;
                         break;
@@ -257,12 +261,19 @@ namespace MiningOperation.Asteroids
             Material volume = anchor.visuals != null && anchor.visuals.gasVolumeMaterialOverride != null
                 ? anchor.visuals.gasVolumeMaterialOverride
                 : anchor.settings != null ? anchor.settings.gasVolumeMaterial : null;
-            bool requestedVolume = anchor.gasPresentation == MOGasPresentation.Volumetric;
+            bool groundMode = anchor.gasPresentation == MOGasPresentation.GroundFog;
+            if (groundMode)
+            {
+                volume = anchor.visuals != null && anchor.visuals.groundFogMaterialOverride != null
+                    ? anchor.visuals.groundFogMaterialOverride
+                    : anchor.settings != null ? anchor.settings.groundFogMaterial : null;
+            }
+            bool requestedVolume = anchor.gasPresentation != MOGasPresentation.SoftParticles;
             bool volumeValid = volume != null && volume.shader != null && volume.shader.isSupported &&
-                volume.shader.name == "MiningOperation/GasVolumeURP";
+                volume.shader.name == (groundMode ? "MiningOperation/GroundFogURP" : "MiningOperation/GasVolumeURP");
             if (requestedVolume && volumeValid)
             {
-                BuildVolumeVisuals(anchor, volume);
+                BuildVolumeVisuals(anchor, volume, groundMode);
                 RemoveGeneratedChild(ChildName);
                 isVolumeActive = true;
                 SyncVisualVisibility();
@@ -364,7 +375,7 @@ namespace MiningOperation.Asteroids
             // The system has no emission: all gas billboards come from SetParticles.
         }
 
-        private void BuildVolumeVisuals(AsteroidFieldSpawnPoint anchor, Material volumeMaterial)
+        private void BuildVolumeVisuals(AsteroidFieldSpawnPoint anchor, Material volumeMaterial, bool groundMode)
         {
             Transform existing = transform.Find(VolumeChildName);
             GameObject go;
@@ -380,12 +391,16 @@ namespace MiningOperation.Asteroids
             if (renderer == null) renderer = go.AddComponent<MeshRenderer>();
 
             var oldMesh = filter.sharedMesh;
-            var newMesh = MOGasVolumeMeshBuilder.Build(snapshot);
+            var newMesh = groundMode
+                ? MOGroundFogMeshBuilder.Build(snapshot, transform, anchor.groundFogFloorY,
+                    anchor.groundFogHeightMeters, anchor.groundFogRadiusMultiplier)
+                : MOGasVolumeMeshBuilder.Build(snapshot);
             newMesh.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
             filter.sharedMesh = newMesh;
             generatedVolumeMesh = newMesh;
             if (oldMesh != null && oldMesh != newMesh &&
-                oldMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName &&
+                (oldMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName ||
+                 oldMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName) &&
                 (oldMesh.hideFlags & HideFlags.DontSaveInEditor) != 0)
                 DestroyGeneratedMesh(oldMesh);
 
@@ -404,6 +419,28 @@ namespace MiningOperation.Asteroids
             properties.SetFloat("_GasBrightness", anchor.gasVolumeBrightness);
             properties.SetFloat("_GasDrift", anchor.gasDriftStrength);
             properties.SetFloat("_GasSteps", anchor.gasVolumeSteps);
+            if (groundMode)
+            {
+                properties.SetFloat("_FogTopSoftness", anchor.groundFogTopSoftness);
+                var lightPositions = new Vector4[4];
+                var lightColors = new Vector4[4];
+                int count = 0;
+                if (anchor.groundFogLights != null)
+                    foreach (var light in anchor.groundFogLights)
+                    {
+                        if (count >= 4) break;
+                        if (light == null || !light.enabled || !light.gameObject.activeInHierarchy) continue;
+                        if (light.type != LightType.Point && light.type != LightType.Spot) continue;
+                        var p = light.transform.position;
+                        lightPositions[count] = new Vector4(p.x, p.y, p.z, Mathf.Max(1f, light.range));
+                        Color c = light.color * Mathf.Min(12f, Mathf.Max(0f, light.intensity) * 0.15f);
+                        lightColors[count] = new Vector4(c.r, c.g, c.b, 1f);
+                        count++;
+                    }
+                properties.SetVectorArray("_FogLightPosRange", lightPositions);
+                properties.SetVectorArray("_FogLightColors", lightColors);
+                properties.SetInt("_FogLightCount", count);
+            }
             Light sun = RenderSettings.sun;
             Vector3 towardLight = sun != null ? -sun.transform.forward :
                 new Vector3(-0.42f, 0.71f, -0.56f).normalized;
@@ -425,7 +462,8 @@ namespace MiningOperation.Asteroids
             {
                 var filter = item.GetComponent<MeshFilter>();
                 if (filter != null && filter.sharedMesh != null &&
-                    filter.sharedMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName &&
+                    (filter.sharedMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName ||
+                     filter.sharedMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName) &&
                     (filter.sharedMesh.hideFlags & HideFlags.DontSaveInEditor) != 0)
                 {
                     Mesh existing = filter.sharedMesh;
