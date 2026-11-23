@@ -1,3 +1,40 @@
+# Ground Fog v0.3 — Fast Surface (URP)
+
+**Чому змінили:** попередній режим `VolumetricCloudlets` виконував багатокроковий raymarching у кожній із багатьох хмар, що перекривались. На користувацькій сцені спостерігали ~21 FPS; показник належить старому алгоритму, не є виміром v0.3.
+
+## Новий стандартний режим
+У `Tools → Mining Operation → Asteroid Field Studio → VISUALS`, для Gas обери:
+- `Rendering mode = GroundFog`
+- `Fog rendering quality = FastSurface` (типове значення навіть для старих сцен)
+- `Base world Y = 0`
+- `Height = 120`
+- `Surface grid resolution = 96` (спробуй 48 для великих полів)
+- `Cloud top height variation = 0.8`
+- `Cloud shape irregularity = 0.85`
+- `Cloud gaps / empty pockets = 0.55`
+- `Opacity = 0.1–0.2`
+
+**Для вже наявної сцени:** якщо немає матеріалу, у вкладці VISUALS натисни `INSTALL FAST FOG MATERIAL (keep existing layout)`; створиться власний `MO_GroundFogFastURP_v03.mat` і повторно збереться **лише візуальна сітка**, без перегенерації газових записів. `Build Cloud Visuals` для цього не потрібна.
+
+## Технічна схема
+- **Один** згенерований heightfield-меш для всього поля замість 12×13 та більше об'ємів;
+- CPU-згенеровані під час authoring/Start карта висот і альфа-густина зі збережених газових центрів; жодного перерахунку меша в кожному кадрі;
+- один простий URP шейдер `MiningOperation/GroundFogFastURP`, один текстурний шум на піксель, без циклу raymarching;
+- одна прозора поверхня із розмитими краями, нерівною висотою і просвітами; світло від до 4 джерел приблизне;
+- відстань між камерою та поверхнею контролюється звичайним depth test; туман є **візуальною імітацією**, а не фізичним об'ємним середовищем.
+
+`Fog rendering quality = VolumetricCloudlets` повертає попередній важкий режим, якщо потрібно порівняти зображення. Від `Gas / Volumetric` він незалежний.
+
+**Обмеження:** поверхня найкраще читається з камери над полем; збоку або знизу вона не відтворює глибокий 3D-туман. У межах одного Spawn Point — один Draw MeshRenderer (не гарантується як одна GPU draw call для всіх сцен). Прозорість усе одно потребує blend. Необхідно перевірити результат і GPU frame time у Unity 6/Metal до merge.
+
+## Як виміряти прискорення
+1. Збережи сцену, обери той самий ракурс і роздільність Game View.
+2. В Unity Profiler порівняй час **GPU Frame** та FPS при вимкненому fog, з FastSurface і з VolumetricCloudlets.
+3. Перевір сцени з 1, 5, 13 кластерами та рух камери; за потреби зменшуй Surface grid resolution до 48.
+4. Якщо помилки імпорту/шейдера — скопіюй текст Console. Рушій у цьому середовищі не запускався.
+
+---
+
 # Mining Operation — Ground Fog URP v0.1 (experimental)
 
 Branch: `feature/ground-fog-urp-rebased-20261123`
