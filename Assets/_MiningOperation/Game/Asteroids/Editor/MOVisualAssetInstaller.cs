@@ -280,8 +280,8 @@ namespace MiningOperation.Asteroids.Editor
                 // Periodicity is approximated by sampling a tiled toroidal domain.
                 // Pixel shader requires only ONE texture sample, not costly trig noise.
                 float u = (x + 0.5f) / size, v = (y + 0.5f) / size;
-                float a = Mathf.PerlinNoise(u * 5f + 9.7f, v * 5f + 6.4f);
-                float b = Mathf.PerlinNoise(u * 13f + 21.8f, v * 13f + 43.2f);
+                float a = SeamlessPerlin(u, v, 5f, 9.7f, 6.4f);
+                float b = SeamlessPerlin(u, v, 13f, 21.8f, 43.2f);
                 float n = Mathf.Clamp01(a * .65f + b * .35f);
                 byte c = (byte)Mathf.RoundToInt(n * 255f);
                 pixels[y * size + x] = new Color32(c, c, c, 255);
@@ -289,6 +289,15 @@ namespace MiningOperation.Asteroids.Editor
             t.SetPixels32(pixels);
             t.Apply(false, false);
             return t;
+        }
+
+        private static float SeamlessPerlin(float u, float v, float tiles, float ox, float oy)
+        {
+            float p00 = Mathf.PerlinNoise(ox + u * tiles, oy + v * tiles);
+            float p10 = Mathf.PerlinNoise(ox + (u - 1f) * tiles, oy + v * tiles);
+            float p01 = Mathf.PerlinNoise(ox + u * tiles, oy + (v - 1f) * tiles);
+            float p11 = Mathf.PerlinNoise(ox + (u - 1f) * tiles, oy + (v - 1f) * tiles);
+            return Mathf.Lerp(Mathf.Lerp(p00, p10, u), Mathf.Lerp(p01, p11, u), v);
         }
 
         private static Texture2D GenerateGasSprite(int size)
