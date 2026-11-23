@@ -276,22 +276,106 @@ namespace MiningOperation.Asteroids.Editor
                 AssetDatabase.CreateFolder("Assets/_MiningOperation", "AsteroidAuthoring");
         }
 
-        public static AsteroidFieldSpawnPoint CreateSpawnPoint(AsteroidFieldSettings fieldSettings)
+        private const string FormationSettingsFolder = AssetFolder + "/Formations";
+
+        /// <summary>
+        /// Each newly authored location owns a persistent Field Settings asset.
+        /// Clone the field configuration only. Resource catalogs, generator templates,
+        /// and material references intentionally remain shared and are NOT duplicated.
+        /// The source Field Settings asset is never modified by this method.
+        /// </summary>
+        public static AsteroidFieldSettings CreateFormationSettings(
+            AsteroidFieldSettings template, MiningFieldContent content,
+            AsteroidFormationType formation, string fieldId)
         {
-            var go = new GameObject("Belt Spawn Point");
-            Undo.RegisterCreatedObjectUndo(go, "Create asteroid spawn point");
-            if (SceneView.lastActiveSceneView != null)
-                go.transform.position = SceneView.lastActiveSceneView.pivot;
-            var anchor = go.AddComponent<AsteroidFieldSpawnPoint>();
-            anchor.fieldId = "BELT-" + Guid.NewGuid().ToString("N").Substring(0, 16);
-            anchor.fieldSeed = DateTime.UtcNow.Ticks;
-            anchor.settings = fieldSettings;
-            CopySharedLayout(anchor);
-            anchor.SyncToController();
-            Selection.activeGameObject = go;
-            EditorUtility.SetDirty(anchor);
-            EditorSceneManager.MarkSceneDirty(go.scene);
-            return anchor;
+            if (!IsReady(template))
+                throw new InvalidOperationException("A valid Field Settings template with a resource catalog is required.");
+            if (string.IsNullOrWhiteSpace(fieldId))
+                throw new ArgumentException("A persistent field ID is required.", nameof(fieldId));
+
+            EnsureFolder();
+            if (!AssetDatabase.IsValidFolder(FormationSettingsFolder))
+                AssetDatabase.CreateFolder(AssetFolder, "Formations");
+
+            string safeId = System.Text.RegularExpressions.Regex.Replace(fieldId, @"[^A-Za-z0-9_-]", "_");
+            string name = "MO_" + content + "_" + formation + "_" + safeId + "_FieldSettings";
+            string path = AssetDatabase.GenerateUniqueAssetPath(FormationSettingsFolder + "/" + name + ".asset");
+            var unique = UnityEngine.Object.Instantiate(template);
+            unique.name = name;
+            unique.hideFlags = HideFlags.None;
+            unique.formation = formation;
+            try
+            {
+                AssetDatabase.CreateAsset(unique, path);
+                AssetDatabase.SaveAssets();
+                return unique;
+            }
+            catch
+            {
+                if (AssetDatabase.LoadAssetAtPath<AsteroidFieldSettings>(path) != null)
+                    AssetDatabase.DeleteAsset(path);
+                else
+                    UnityEngine.Object.DestroyImmediate(unique);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Always create a distinct persisted Field Settings asset for a new formation.
+        /// The only exception is first-time project setup, where CreateReadyAssets()
+        /// already produced a brand-new dedicated asset (reuseFirstSetupAsset = true).
+        /// Legacy field conversion remains untouched.
+        /// </summary>
+        public static AsteroidFieldSpawnPoint CreateSpawnPoint(
+            AsteroidFieldSettings fieldSettings,
+            MiningFieldContent content = MiningFieldContent.Rock,
+            bool reuseFirstSetupAsset = false)
+        {
+            if (!IsReady(fieldSettings))
+                throw new InvalidOperationException("Cannot create a field without valid Field Settings.");
+
+            string id = "BELT-" + Guid.NewGuid().ToString("N").Substring(0, 16);
+            long seed = DateTime.UtcNow.Ticks;
+            AsteroidFormationType formation = fieldSettings.formation;
+            if (content == MiningFieldContent.IceShelf)
+                formation = AsteroidFormationType.IceShelfContinents;
+            else if (content != MiningFieldContent.IceShelf &&
+                (formation == AsteroidFormationType.IceShelfContinents ||
+                 formation == AsteroidFormationType.IceShelfFragments))
+                formation = AsteroidFormationType.CrescentBelt;
+
+            AsteroidFieldSettings dedicated = reuseFirstSetupAsset
+                ? fieldSettings
+                : CreateFormationSettings(fieldSettings, content, formation, id);
+            GameObject go = null;
+            try
+            {
+                go = new GameObject(content + " Spawn Point");
+                Undo.RegisterCreatedObjectUndo(go, "Create asteroid spawn point");
+                if (SceneView.lastActiveSceneView != null)
+                    go.transform.position = SceneView.lastActiveSceneView.pivot;
+                var anchor = go.AddComponent<AsteroidFieldSpawnPoint>();
+                anchor.fieldId = id;
+                anchor.fieldSeed = seed;
+                anchor.contentType = content;
+                anchor.settings = dedicated;
+                CopySharedLayout(anchor);
+                anchor.SyncToController();
+                Selection.activeGameObject = go;
+                EditorUtility.SetDirty(anchor);
+                EditorSceneManager.MarkSceneDirty(go.scene);
+                return anchor;
+            }
+            catch
+            {
+                if (go != null) UnityEngine.Object.DestroyImmediate(go);
+                if (!reuseFirstSetupAsset && dedicated != null)
+                {
+                    string path = AssetDatabase.GetAssetPath(dedicated);
+                    if (!string.IsNullOrEmpty(path)) AssetDatabase.DeleteAsset(path);
+                }
+                throw;
+            }
         }
 
         /// <summary>Attach authoring UX to a pre-v1.4 scene field without rebuilding its snapshot.</summary>
