@@ -27,6 +27,31 @@ An **optional** low, flattened visual gas mode built on the existing gas cloud r
 9. Optional: drag up to four Point Lights from the Hierarchy into **Local fog lights**. Light scattering is sampled when visuals are rebuilt; after moving a light, rebuild visuals to update its position.
 10. The Field Studio queues a safe `RebuildVisuals()` when these visual settings are edited, without rebuilding saved cloud records. Save your scene and test in Game view.
 
+## Ground Fog v0.2 — cloudlet formation
+
+A single saved Gas cluster is now a **group of deterministic subclouds**, rather than one enormous smooth ellipsoid. The generated subclouds are purely visual; the gas JSON, IDs and saved cloud centers do not change.
+
+In **VISUALS** choose `Rendering mode = GroundFog` and tune:
+
+| Property | Suggested starting value | Function |
+| --- | ---: | --- |
+| Small clouds per cluster | 12 | Subdivides one gas cluster into many overlapping cloudlets |
+| Cloud top height variation | 0.8 | Different billow heights; no uniform ceiling |
+| Cloudlet spread | 0.8 | Width of the subcloud grouping |
+| Cloud shape irregularity | 0.85 | Distorts boundaries, emphasizing structure |
+| Cloud gaps / empty pockets | 0.55 | Higher values remove uniform grey fill and create openings |
+| Soft upper fade | 0.65 | Makes the top of every cloudlet softer |
+| Raymarch samples | 12–16 | Quality/performance tradeoff |
+| Opacity | 0.1–0.2 | Start modestly; overlapping cloudlets accumulate opacity |
+
+The renderer builds **one combined mesh** for each Gas Spawn Point; it does not create additional GameObjects or change saved gas records.
+
+**GPU cost:** cloudlets increase overdraw, even though they share a mesh; a dozen gas clusters with 12 cloudlets each can be expensive at high resolution. For larger fields start with 4–8 cloudlets/cluster, 8–12 raymarch samples, and profile GPU time in Unity.
+
+**Color:** for the dark Falling Frontier look, darken the per-spawn Gas colors. The currently pale gas palette may still read as grey in a brightly lit scene. Use restrained local lighting. Changes to existing Gas/Volumetric mode remain isolated.
+
+**Validation:** the additional deterministic-cloudlet tests have not been run in Unity in this environment. Check compilation and Game View before merging.
+
 ## Notes
 - This first version renders **flattened individual cloud clusters**, not an infinitely tiled full-map blanket. Increase each cloud radius and cluster count if you want more coverage; adding clouds via BUILD changes the procedural cloud layout.
 - The fog is anchored to world Y, so it still appears around Y = 0 when the Gas Spawn Point is at Y = -3371.
