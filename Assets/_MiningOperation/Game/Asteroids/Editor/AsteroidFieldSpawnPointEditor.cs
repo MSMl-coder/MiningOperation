@@ -31,6 +31,7 @@ namespace MiningOperation.Asteroids.Editor
                 EditorGUILayout.LabelField("GAS MATERIALS", EditorStyles.boldLabel);
                 serializedObject.Update();
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.gasVolumeMaterialOverride"), new GUIContent("Volume material"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.groundFogMaterialOverride"), new GUIContent("Ground fog material"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.gasParticleMaterialOverride"), new GUIContent("Particle material"));
                 if (serializedObject.ApplyModifiedProperties())
                 {
