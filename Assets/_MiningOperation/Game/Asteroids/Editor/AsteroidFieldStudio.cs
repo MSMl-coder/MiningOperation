@@ -521,8 +521,15 @@ namespace MiningOperation.Asteroids.Editor
                         Prop(local, "groundFogHeightMeters", "Height (m)");
                         Prop(local, "groundFogRadiusMultiplier", "Horizontal radius multiplier");
                         Prop(local, "groundFogTopSoftness", "Soft upper fade");
+                        EditorGUILayout.Space(4f);
+                        Header("Cloudlet formation (no gas-record rebuild)");
+                        Prop(local, "groundFogCloudletsPerCluster", "Small clouds per cluster");
+                        Prop(local, "groundFogHeightVariation", "Cloud top height variation");
+                        Prop(local, "groundFogCloudletSpread", "Cloudlet spread");
+                        Prop(local, "groundFogBreakup", "Cloud shape irregularity");
+                        Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
                         Prop(local, "groundFogLights", "Local fog lights (up to 4)");
-                        EditorGUILayout.HelpBox("Visual mode only. Fog is flattened on WORLD Y, not Spawn Point Y. The original cloud records and gas materials are preserved.", MessageType.Info);
+                        EditorGUILayout.HelpBox("Ground Fog builds many independently sized cloudlets from each saved gas cluster. Changes here rebuild only the visual mesh, never gas records. For large fields reduce Cloudlets or Raymarch samples to improve GPU performance.", MessageType.Info);
                     }
                 }
                 else

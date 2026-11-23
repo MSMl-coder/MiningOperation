@@ -202,7 +202,7 @@ namespace MiningOperation.Asteroids
                 {
                     bool ground = anchor.gasPresentation == MOGasPresentation.GroundFog;
                     float worldRadius = ground
-                        ? cloud.radiusMeters * anchor.groundFogRadiusMultiplier
+                        ? cloud.radiusMeters * anchor.groundFogRadiusMultiplier * 1.4f
                         : cloud.radiusMeters * MaxScale(transform.lossyScale);
                     Vector3 worldCenter = transform.TransformPoint(cloud.localCenter);
                     if (ground) worldCenter.y = anchor.groundFogFloorY + anchor.groundFogHeightMeters * 0.5f;
@@ -393,7 +393,10 @@ namespace MiningOperation.Asteroids
             var oldMesh = filter.sharedMesh;
             var newMesh = groundMode
                 ? MOGroundFogMeshBuilder.Build(snapshot, transform, anchor.groundFogFloorY,
-                    anchor.groundFogHeightMeters, anchor.groundFogRadiusMultiplier)
+                    anchor.groundFogHeightMeters, anchor.groundFogRadiusMultiplier,
+                    cloudletsPerCluster: anchor.groundFogCloudletsPerCluster,
+                    heightVariation: anchor.groundFogHeightVariation,
+                    cloudletSpread: anchor.groundFogCloudletSpread)
                 : MOGasVolumeMeshBuilder.Build(snapshot);
             newMesh.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
             filter.sharedMesh = newMesh;
@@ -422,6 +425,8 @@ namespace MiningOperation.Asteroids
             if (groundMode)
             {
                 properties.SetFloat("_FogTopSoftness", anchor.groundFogTopSoftness);
+                properties.SetFloat("_FogBreakup", anchor.groundFogBreakup);
+                properties.SetFloat("_FogCutouts", anchor.groundFogCutouts);
                 var lightPositions = new Vector4[4];
                 var lightColors = new Vector4[4];
                 int count = 0;
