@@ -14,7 +14,7 @@ namespace MiningOperation.Asteroids
         IceShelf = 3 // giant plateau-like shelf bodies
     }
     // Zero preserves the stable v2.3.x particle presentation for existing scenes.
-    public enum MOGasPresentation { SoftParticles = 0, Volumetric = 1 }
+    public enum MOGasPresentation { SoftParticles = 0, Volumetric = 1, GroundFog = 2 }
 
     /// <summary>
     /// Attach to an EMPTY scene object. Every anchor owns an independent field ID, seed,
@@ -51,6 +51,15 @@ namespace MiningOperation.Asteroids
         [Range(0.25f, 3f)] public float gasVolumeNoiseScale = 1f;
         [Range(0.25f, 2f)] public float gasVolumeBrightness = 1f;
         [Min(100f)] public float gasVisibilityDistanceMeters = 14000f;
+
+        [Header("Ground Fog (when Gas Rendering Mode = GroundFog)")]
+        [Tooltip("World-space Y level for the base of the fog. Independent of this Spawn Point's height.")]
+        public float groundFogFloorY = 0f;
+        [Min(5f)] public float groundFogHeightMeters = 180f;
+        [Range(0.5f, 3f)] public float groundFogRadiusMultiplier = 1.35f;
+        [Range(0.15f, 0.95f)] public float groundFogTopSoftness = 0.70f;
+        [Tooltip("Optional local Point/Spot lights illuminating this fog (max 4). Standard Gas does not use them.")]
+        public Light[] groundFogLights = Array.Empty<Light>();
 
         [Header("Formation for this spawn point")]
         public AsteroidFormationType formation = AsteroidFormationType.CrescentBelt;
@@ -331,6 +340,10 @@ namespace MiningOperation.Asteroids
             gasVolumeNoiseScale = Mathf.Clamp(gasVolumeNoiseScale, 0.25f, 3f);
             gasVolumeBrightness = Mathf.Clamp(gasVolumeBrightness, 0.25f, 2f);
             gasVisibilityDistanceMeters = Mathf.Max(100f, gasVisibilityDistanceMeters);
+            if (float.IsNaN(groundFogFloorY) || float.IsInfinity(groundFogFloorY)) groundFogFloorY = 0f;
+            groundFogHeightMeters = Mathf.Max(5f, groundFogHeightMeters);
+            groundFogRadiusMultiplier = Mathf.Clamp(groundFogRadiusMultiplier, 0.5f, 3f);
+            groundFogTopSoftness = Mathf.Clamp(groundFogTopSoftness, 0.15f, 0.95f);
             SyncToController();
         }
         private void OnDrawGizmosSelected()
