@@ -1,3 +1,23 @@
+# Ground Fog v0.3.1 — Fast material recovery
+
+**Why the material was missing:** PR #4 added a shader and material creation code, but the generated `.mat` and `.png` are Editor-created assets and are not initially present in the repository. The old installer button was hidden when the editor conditions were not met.
+
+## Reliable installation / repair
+
+1. Make sure you have merged/pulled PR #5 (the fix) and stopped Play Mode.
+2. In the Hierarchy, select **Gas Spawn Point** (not its child mesh).
+3. Run **Tools → Mining Operation → Repair Fast Ground Fog Assets**. This menu is always available, regardless of Field Studio tab or fog rendering mode.
+4. Alternatively, select Gas Spawn Point in the Inspector and click **INSTALL / REPAIR FAST FOG MATERIAL** under **GAS MATERIALS**; or in Field Studio → VISUALS click the same always-visible button.
+5. The tool writes `Assets/_MiningOperation/AsteroidAuthoring/Visuals/MO_GroundFogFastURP_v03.mat` and `MO_GroundFogFastNoise_v03.png`, then assigns the shared Field Settings reference.
+6. In `VISUALS`, choose **Rendering mode: GroundFog**, **Fog rendering quality: FastSurface**. If fog visuals already exist, the tool calls only `RebuildVisuals()`, never `BuildRecords()` or `BUILD CLOUD VISUALS`.
+
+A blank **Fast fog surface material (local override)** field in the Spawn Point Inspector is normal when the asset is assigned via **Shared fast fog material** instead.
+
+If no shader is found, look in Unity Console for `[MO Fog]` errors and check that the shader **MiningOperation/GroundFogFastURP** compiled successfully in URP. The repair command will report failure rather than pretending to create material.
+
+The installer never overwrites valid user-authored materials or gas field records. Existing Gas, Volumetric and other asteroid materials remain unchanged.
+
+---
 # Ground Fog v0.3 — Fast Surface (URP)
 
 **Чому змінили:** попередній режим `VolumetricCloudlets` виконував багатокроковий raymarching у кожній із багатьох хмар, що перекривались. На користувацькій сцені спостерігали ~21 FPS; показник належить старому алгоритму, не є виміром v0.3.
