@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: MO_Rock_BrokenBelt_Rock_Spawn_Point_FieldSettings
   m_EditorClassIdentifier: MiningOperation.Asteroids.Runtime::MiningOperation.Asteroids.AsteroidFieldSettings
   asteroidSettings: {fileID: 11400000, guid: 4a4ffdd17bc0444dead6e46f491067ad, type: 2}
-  unifiedAsteroidMaterial: {fileID: 2100000, guid: 54f626fc1c1894fe98bc2d8e557530e5, type: 2}
+  unifiedAsteroidMaterial: {fileID: 2100000, guid: 4e4185596eee24f81a9a56874e24fa90, type: 2}
   asteroidMaterial: {fileID: 2100000, guid: 54f626fc1c1894fe98bc2d8e557530e5, type: 2}
   distantMaterial: {fileID: 2100000, guid: 54f626fc1c1894fe98bc2d8e557530e5, type: 2}
   iceMaterial: {fileID: 2100000, guid: 330c476fd6a124bab8ff1e25ab4b08d7, type: 2}
@@ -21,6 +21,7 @@ MonoBehaviour:
   gasParticleMaterial: {fileID: 2100000, guid: 4ea07ba627d694e5a84aaf34e26ee66f, type: 2}
   gasVolumeMaterial: {fileID: 2100000, guid: f7487c6dc896d4057a1831c46d76885c, type: 2}
   groundFogMaterial: {fileID: 2100000, guid: f1bc6ed109fa845618103a61719179ac, type: 2}
+  groundFogFastMaterial: {fileID: 2100000, guid: 477cfdfe214ff4816a859801c306ea55, type: 2}
   allowExperimentalRockShaders: 0
   fastStreamedAsteroids: 1
   streamedMeshSubdivisions: 3
