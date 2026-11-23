@@ -200,6 +200,7 @@ namespace MiningOperation.Asteroids
         public Material distantMaterialOverride;
         public Material gasParticleMaterialOverride;
         public Material gasVolumeMaterialOverride;
+        public Material groundFogMaterialOverride;
         public bool allowExperimentalRockShaders;
         [Range(0f, .5f)] public float rockNormalStrength = .18f;
         public bool enableDecorativeDebris = true;
@@ -242,6 +243,7 @@ namespace MiningOperation.Asteroids
             if (distantMaterialOverride != null) s.distantMaterial = distantMaterialOverride;
             if (gasParticleMaterialOverride != null) s.gasParticleMaterial = gasParticleMaterialOverride;
             if (gasVolumeMaterialOverride != null) s.gasVolumeMaterial = gasVolumeMaterialOverride;
+            if (groundFogMaterialOverride != null) s.groundFogMaterial = groundFogMaterialOverride;
             s.allowExperimentalRockShaders = allowExperimentalRockShaders;
             s.rockNormalStrength = Mathf.Clamp(rockNormalStrength, 0f, .5f);
             s.enableDecorativeDebris = enableDecorativeDebris;
