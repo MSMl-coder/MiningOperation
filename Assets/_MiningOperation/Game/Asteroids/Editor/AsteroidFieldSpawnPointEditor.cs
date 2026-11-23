@@ -34,6 +34,25 @@ namespace MiningOperation.Asteroids.Editor
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.groundFogMaterialOverride"), new GUIContent("Ground fog volume material"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.groundFogFastMaterialOverride"), new GUIContent("Fast fog surface material"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("visuals.gasParticleMaterialOverride"), new GUIContent("Particle material"));
+                EditorGUILayout.Space(4f);
+                Material fastShared = anchor.settings != null ? anchor.settings.groundFogFastMaterial : null;
+                EditorGUILayout.ObjectField("Shared fast fog material", fastShared, typeof(Material), false);
+                using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode ||
+                    anchor.settings == null))
+                {
+                    if (GUILayout.Button("INSTALL / REPAIR FAST FOG MATERIAL", GUILayout.Height(26f)))
+                    {
+                        var anchorToRepair = anchor;
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (anchorToRepair != null) MOGroundFogAssetRepair.Repair(anchorToRepair);
+                        };
+                    }
+                }
+                if (anchor.settings == null)
+                    EditorGUILayout.HelpBox("Assign Field Settings before installing Fast Ground Fog assets.", MessageType.Warning);
+                else
+                    EditorGUILayout.HelpBox("Shared fast fog material may be assigned even when the Local Override is None. Installation preserves saved cloud records.", MessageType.None);
                 if (serializedObject.ApplyModifiedProperties())
                 {
                     EditorUtility.SetDirty(anchor);
