@@ -89,7 +89,7 @@ Shader "MiningOperation/GroundFogURP"
                 float a = lerp(Hash3(i), Hash3(i + float3(1,0,0)), f.x);
                 float b = lerp(Hash3(i + float3(0,1,0)), Hash3(i + float3(1,1,0)), f.x);
                 float c = lerp(Hash3(i + float3(0,0,1)), Hash3(i + float3(1,0,1)), f.x);
-                float d = lerp(Hash3(i + float3(0,0,1) + float3(1,0,0)), Hash3(i + float3(1,1,1)), f.x);
+                float d = lerp(Hash3(i + float3(0,1,1)), Hash3(i + float3(1,1,1)), f.x);
                 return lerp(lerp(a,b,f.y), lerp(c,d,f.y), f.z);
             }
 
