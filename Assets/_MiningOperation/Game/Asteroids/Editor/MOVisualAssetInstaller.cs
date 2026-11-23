@@ -62,42 +62,10 @@ namespace MiningOperation.Asteroids.Editor
                 EditorUtility.SetDirty(gasMat);
             }
 
-            // Cheap, one-surface ground fog. Preserve existing gas and raymarched fog assets.
-            Shader fastShader = Shader.Find("MiningOperation/GroundFogFastURP");
-            if (fastShader != null && fastShader.isSupported)
-            {
-                const string fastPath = Root + "/MO_GroundFogFastURP_v03.mat";
-                const string noisePath = Root + "/MO_GroundFogFastNoise_v03.png";
-                EnsureReadableAsset<Material>(fastPath);
-                if (!File.Exists(noisePath))
-                {
-                    WriteTexture(noisePath, GenerateGroundFogNoise(256));
-                    AssetDatabase.Refresh();
-                }
-                Import(noisePath, true, false);
-                var noise = AssetDatabase.LoadAssetAtPath<Texture2D>(noisePath);
-                var fastMat = AssetDatabase.LoadAssetAtPath<Material>(fastPath);
-                if (fastMat == null)
-                {
-                    fastMat = new Material(fastShader);
-                    fastMat.SetFloat("_GasOpacity", .2f);
-                    fastMat.SetFloat("_GasNoiseScale", 1f);
-                    fastMat.SetFloat("_FogBreakup", .8f);
-                    fastMat.SetFloat("_FogCutouts", .55f);
-                    fastMat.SetColor("_GasColorA", new Color(.16f, .25f, .28f));
-                    fastMat.SetColor("_GasColorB", new Color(.24f, .33f, .36f));
-                    if (noise != null) fastMat.SetTexture("_FogNoiseTex", noise);
-                    AssetDatabase.CreateAsset(fastMat, fastPath);
-                }
-                if (settings.groundFogFastMaterial == null ||
-                    settings.groundFogFastMaterial.shader == null ||
-                    !settings.groundFogFastMaterial.shader.isSupported)
-                {
-                    Undo.RecordObject(settings, "Assign fast ground fog material");
-                    settings.groundFogFastMaterial = fastMat;
-                    EditorUtility.SetDirty(settings);
-                }
-            }
+            // Installing gas assets also ensures the independent fast fog material exists.
+            // Unlike the legacy installer, the standalone repair action below does NOT
+            // modify unrelated gas, ice, or asteroid materials.
+            InstallFastGroundFogAssets(settings);
 
             // Independent ground-fog asset: do not modify the working volumetric gas material.
             Shader groundShader = Shader.Find("MiningOperation/GroundFogURP");
@@ -164,6 +132,92 @@ namespace MiningOperation.Asteroids.Editor
             return true;
         }
 
+
+
+        /// <summary>
+        /// Standalone idempotent editor installer. Generates ONLY the fast fog texture
+        /// and material, and repairs its reference on the selected Field Settings asset.
+        /// Never rebuilds gas records or touches legacy gas materials.
+        /// </summary>
+        public static bool InstallFastGroundFogAssets(AsteroidFieldSettings settings)
+        {
+            if (settings == null)
+            {
+                Debug.LogError("[MO Fog] Cannot install fast fog: Field Settings is not assigned.");
+                return false;
+            }
+
+            Shader shader = Shader.Find("MiningOperation/GroundFogFastURP");
+            if (shader == null || !shader.isSupported)
+            {
+                Debug.LogError("[MO Fog] Shader MiningOperation/GroundFogFastURP is missing or unsupported. " +
+                               "Check your URP installation and Unity Console shader compilation errors.");
+                return false;
+            }
+
+            EnsureFolder();
+            const string materialPath = Root + "/MO_GroundFogFastURP_v03.mat";
+            const string noisePath = Root + "/MO_GroundFogFastNoise_v03.png";
+            EnsureReadableAsset<Material>(materialPath);
+
+            if (!File.Exists(noisePath))
+            {
+                WriteTexture(noisePath, GenerateGroundFogNoise(256));
+                AssetDatabase.ImportAsset(noisePath, ImportAssetOptions.ForceUpdate);
+            }
+
+            Import(noisePath, true, false);
+            Texture2D noiseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(noisePath);
+            if (noiseTexture == null)
+                throw new InvalidOperationException("[MO Fog] Failed to load generated noise texture: " + noisePath);
+
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+            if (material == null)
+            {
+                material = new Material(shader);
+                material.name = "MO_GroundFogFastURP_v03";
+                material.SetFloat("_GasOpacity", .2f);
+                material.SetFloat("_GasNoiseScale", 1f);
+                material.SetFloat("_FogBreakup", .8f);
+                material.SetFloat("_FogCutouts", .55f);
+                material.SetColor("_GasColorA", new Color(.16f, .25f, .28f));
+                material.SetColor("_GasColorB", new Color(.24f, .33f, .36f));
+                material.SetTexture("_FogNoiseTex", noiseTexture);
+                AssetDatabase.CreateAsset(material, materialPath);
+            }
+            else
+            {
+                // Keep user-authored values. Only repair missing texture or broken shader.
+                if (material.shader == null || !material.shader.isSupported)
+                {
+                    Undo.RecordObject(material, "Repair fast fog shader");
+                    material.shader = shader;
+                    EditorUtility.SetDirty(material);
+                }
+                if (material.HasProperty("_FogNoiseTex") && material.GetTexture("_FogNoiseTex") == null)
+                {
+                    Undo.RecordObject(material, "Repair fast fog noise");
+                    material.SetTexture("_FogNoiseTex", noiseTexture);
+                    EditorUtility.SetDirty(material);
+                }
+            }
+
+            // Never replace a valid user-assigned fast fog material.
+            if (settings.groundFogFastMaterial == null ||
+                settings.groundFogFastMaterial.shader == null ||
+                !settings.groundFogFastMaterial.shader.isSupported ||
+                settings.groundFogFastMaterial.shader.name != shader.name)
+            {
+                Undo.RecordObject(settings, "Assign fast ground fog material");
+                settings.groundFogFastMaterial = material;
+                EditorUtility.SetDirty(settings);
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[MO Fog] Fast Ground Fog assets installed / checked at " + Root +
+                      ". Shared material: " + AssetDatabase.GetAssetPath(settings.groundFogFastMaterial));
+            return true;
+        }
 
         public static bool InstallIceResources(AsteroidFieldSettings settings)
         {
