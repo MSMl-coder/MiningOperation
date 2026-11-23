@@ -62,6 +62,32 @@ namespace MiningOperation.Asteroids.Editor
                 EditorUtility.SetDirty(gasMat);
             }
 
+            // Independent ground-fog asset: do not modify the working volumetric gas material.
+            Shader groundShader = Shader.Find("MiningOperation/GroundFogURP");
+            if (groundShader != null && groundShader.isSupported)
+            {
+                const string fogPath = Root + "/MO_GroundFogURP_v01.mat";
+                EnsureReadableAsset<Material>(fogPath);
+                Material fogMat = AssetDatabase.LoadAssetAtPath<Material>(fogPath);
+                if (fogMat == null)
+                {
+                    fogMat = new Material(groundShader);
+                    fogMat.SetFloat("_GasOpacity", .28f);
+                    fogMat.SetFloat("_GasSteps", 16f);
+                    fogMat.SetFloat("_GasContrast", .62f);
+                    fogMat.SetColor("_GasColorA", new Color(.18f, .27f, .30f));
+                    fogMat.SetColor("_GasColorB", new Color(.25f, .35f, .38f));
+                    AssetDatabase.CreateAsset(fogMat, fogPath);
+                }
+                if (settings.groundFogMaterial == null || settings.groundFogMaterial.shader == null ||
+                    !settings.groundFogMaterial.shader.isSupported)
+                {
+                    Undo.RecordObject(settings, "Assign optional ground fog material");
+                    settings.groundFogMaterial = fogMat;
+                    EditorUtility.SetDirty(settings);
+                }
+            }
+
             // V2.4: optional volumetric material. Never make it mandatory for the stable
             // particle fallback. Do not overwrite existing user-authored materials.
             Shader gasVolumeShader = Shader.Find("MiningOperation/GasVolumeURP");
