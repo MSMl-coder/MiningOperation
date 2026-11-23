@@ -64,6 +64,10 @@ namespace MiningOperation.Asteroids.Editor
             Property(editor, properties, "_AmbientFloor", "Ambient floor");
             Property(editor, properties, "_Exposure", "Exposure");
             Property(editor, properties, "_DetailFadeStart", "Far normal fade start");
+            EditorGUILayout.Space(8f);
+            EditorGUILayout.LabelField("LIGHTING DIAGNOSTICS (temporary)", EditorStyles.boldLabel);
+            Property(editor, properties, "_MO_DebugLighting", "Lighting debug view");
+            EditorGUILayout.HelpBox("Off = normal URP PBR. MainLightOnly = main sun response without material color; ShadedNormals = after normal map; RawAlbedo = before lighting; MeshNormals = original mesh normals. Return to Off when finished. This does not change generated asteroids or save data.", MessageType.None);
             EditorGUILayout.Space();
             editor.EnableInstancingField();
             editor.RenderQueueField();
