@@ -234,6 +234,7 @@ namespace MiningOperation.Asteroids.Editor
                 GUILayout.FlexibleSpace();
             }
             EditorGUILayout.PropertyField(so.FindProperty("settings"), new GUIContent("Formation settings (individual asset)"));
+            EditorGUILayout.HelpBox("New Spawn Points automatically create a separate persistent AsteroidFieldSettings asset. Generator templates, material assets and resource catalogs are intentionally shared.", MessageType.None);
             EditorGUILayout.PropertyField(so.FindProperty("fieldSeed"), new GUIContent("Seed"));
             EditorGUILayout.PropertyField(so.FindProperty("fieldId"), new GUIContent("Persistent ID"));
             using (new EditorGUI.DisabledScope(selected.settings == null || EditorApplication.isPlayingOrWillChangePlaymode))
