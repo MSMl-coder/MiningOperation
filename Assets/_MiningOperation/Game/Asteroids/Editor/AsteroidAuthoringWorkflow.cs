@@ -288,8 +288,13 @@ namespace MiningOperation.Asteroids.Editor
             AsteroidFieldSettings template, MiningFieldContent content,
             AsteroidFormationType formation, string fieldId)
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("New Field Settings assets can only be created in Edit Mode.");
             if (!IsReady(template))
                 throw new InvalidOperationException("A valid Field Settings template with a resource catalog is required.");
+            if (string.IsNullOrEmpty(AssetDatabase.GetAssetPath(template)) ||
+                string.IsNullOrEmpty(AssetDatabase.GetAssetPath(template.asteroidSettings)))
+                throw new InvalidOperationException("The Field Settings and its generator must be saved assets before cloning.");
             if (string.IsNullOrWhiteSpace(fieldId))
                 throw new ArgumentException("A persistent field ID is required.", nameof(fieldId));
 
@@ -331,8 +336,20 @@ namespace MiningOperation.Asteroids.Editor
             MiningFieldContent content = MiningFieldContent.Rock,
             bool reuseFirstSetupAsset = false)
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("New formations can only be created in Edit Mode.");
             if (!IsReady(fieldSettings))
                 throw new InvalidOperationException("Cannot create a field without valid Field Settings.");
+            if (reuseFirstSetupAsset)
+            {
+                var existing = UnityEngine.Object.FindObjectsByType<AsteroidFieldSpawnPoint>(
+                    FindObjectsInactive.Include, FindObjectsSortMode.None);
+                foreach (var item in existing)
+                    if (item != null && item.settings == fieldSettings)
+                        throw new InvalidOperationException(
+                            "First-time Field Settings are already assigned to another Spawn Point. " +
+                            "Create a new formation using an independent settings copy instead.");
+            }
 
             string id = "BELT-" + Guid.NewGuid().ToString("N").Substring(0, 16);
             long seed = DateTime.UtcNow.Ticks;
