@@ -18285,8 +18285,8 @@ MonoBehaviour:
   fieldId: BELT-b01c38f7b1eb4299
   fieldSeed: 639302408868322030
   viewer: {fileID: 1308170047}
-  generateOnStart: 1
-  runtimeStreaming: 1
+  generateOnStart: 0
+  runtimeStreaming: 0
   displayGizmos: 0
   snapshot:
     schemaVersion: 1
@@ -18322,7 +18322,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 456736258}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a974a020551f4b2aa466a4897753322, type: 3}
   m_Name: 
@@ -23180,62 +23180,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 585604025}
   m_Mesh: {fileID: 4300000, guid: 76ab91c59b0314d82969d657ca927cb1, type: 2}
---- !u!1 &588230455
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 588230457}
-  - component: {fileID: 588230456}
-  m_Layer: 0
-  m_Name: MO_FogController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &588230456
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 588230455}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9589a4dba4fcc4272b933c3cca55a34b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MiningOperation.Visuals.MOHeightFogController
-  fogMaterial: {fileID: 2100000, guid: 9f1fab9a821d441cca57650040dba253, type: 2}
-  fogColor: {r: 0.13, g: 0.2, b: 0.23, a: 1}
-  floorY: 0
-  height: 80
-  density: 0.025
-  maxRayDistance: 1600
-  raymarchSteps: 12
-  densityNoise: {fileID: 0}
-  noiseScale: 0.003
-  noiseStrength: 0.65
-  wind: {x: 0.004, y: 0.002}
-  fogLights: []
---- !u!4 &588230457
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 588230455}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1749.4567, y: -0.00001, z: 377.8703}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &596220775
 GameObject:
   m_ObjectHideFlags: 0
@@ -91047,4 +90991,3 @@ SceneRoots:
   - {fileID: 2087462805}
   - {fileID: 683731138}
   - {fileID: 1000918645}
-  - {fileID: 588230457}
