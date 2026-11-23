@@ -534,6 +534,35 @@ namespace MiningOperation.Asteroids.Editor
                             Prop(local, "groundFogBreakup", "Cloud shape irregularity");
                             Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
                             EditorGUILayout.HelpBox("FAST surface: one top-facing cloud mesh per location, one 2D noise texture sample per pixel. No ray marching or overlapping volumetric shells. Best for a camera above fog. Old volumetric appearance is still available under Quality = VolumetricCloudlets.", MessageType.Info);
+                            if (selected.settings != null &&
+                                (selected.settings.groundFogFastMaterial == null ||
+                                 selected.settings.groundFogFastMaterial.shader == null ||
+                                 !selected.settings.groundFogFastMaterial.shader.isSupported))
+                            {
+                                if (GUILayout.Button("INSTALL FAST FOG MATERIAL (keep existing layout)"))
+                                {
+                                    var anchorForInstall = selected;
+                                    EditorApplication.delayCall += () =>
+                                    {
+                                        if (anchorForInstall == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                                        try
+                                        {
+                                            if (MOVisualAssetInstaller.Install(anchorForInstall.settings))
+                                            {
+                                                var gasRenderer = anchorForInstall.GetComponent<MOGasFieldRenderer>();
+                                                if (gasRenderer != null && gasRenderer.Snapshot != null)
+                                                {
+                                                    gasRenderer.RebuildVisuals();
+                                                    EditorUtility.SetDirty(gasRenderer);
+                                                }
+                                                if (anchorForInstall.gameObject.scene.IsValid())
+                                                    EditorSceneManager.MarkSceneDirty(anchorForInstall.gameObject.scene);
+                                            }
+                                        }
+                                        catch (Exception ex) { Debug.LogException(ex, anchorForInstall); }
+                                    };
+                                }
+                            }
                         }
                         else
                         {
