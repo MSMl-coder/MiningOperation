@@ -62,6 +62,43 @@ namespace MiningOperation.Asteroids.Editor
                 EditorUtility.SetDirty(gasMat);
             }
 
+            // Cheap, one-surface ground fog. Preserve existing gas and raymarched fog assets.
+            Shader fastShader = Shader.Find("MiningOperation/GroundFogFastURP");
+            if (fastShader != null && fastShader.isSupported)
+            {
+                const string fastPath = Root + "/MO_GroundFogFastURP_v03.mat";
+                const string noisePath = Root + "/MO_GroundFogFastNoise_v03.png";
+                EnsureReadableAsset<Material>(fastPath);
+                if (!File.Exists(noisePath))
+                {
+                    WriteTexture(noisePath, GenerateGroundFogNoise(256));
+                    AssetDatabase.Refresh();
+                }
+                Import(noisePath, true, false);
+                var noise = AssetDatabase.LoadAssetAtPath<Texture2D>(noisePath);
+                var fastMat = AssetDatabase.LoadAssetAtPath<Material>(fastPath);
+                if (fastMat == null)
+                {
+                    fastMat = new Material(fastShader);
+                    fastMat.SetFloat("_GasOpacity", .2f);
+                    fastMat.SetFloat("_GasNoiseScale", 1f);
+                    fastMat.SetFloat("_FogBreakup", .8f);
+                    fastMat.SetFloat("_FogCutouts", .55f);
+                    fastMat.SetColor("_GasColorA", new Color(.16f, .25f, .28f));
+                    fastMat.SetColor("_GasColorB", new Color(.24f, .33f, .36f));
+                    if (noise != null) fastMat.SetTexture("_FogNoiseTex", noise);
+                    AssetDatabase.CreateAsset(fastMat, fastPath);
+                }
+                if (settings.groundFogFastMaterial == null ||
+                    settings.groundFogFastMaterial.shader == null ||
+                    !settings.groundFogFastMaterial.shader.isSupported)
+                {
+                    Undo.RecordObject(settings, "Assign fast ground fog material");
+                    settings.groundFogFastMaterial = fastMat;
+                    EditorUtility.SetDirty(settings);
+                }
+            }
+
             // Independent ground-fog asset: do not modify the working volumetric gas material.
             Shader groundShader = Shader.Find("MiningOperation/GroundFogURP");
             if (groundShader != null && groundShader.isSupported)
@@ -231,6 +268,36 @@ namespace MiningOperation.Asteroids.Editor
         {
             File.WriteAllBytes(path, t.EncodeToPNG());
             UnityEngine.Object.DestroyImmediate(t);
+        }
+
+        private static Texture2D GenerateGroundFogNoise(int size)
+        {
+            var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                // Periodicity is approximated by sampling a tiled toroidal domain.
+                // Pixel shader requires only ONE texture sample, not costly trig noise.
+                float u = (x + 0.5f) / size, v = (y + 0.5f) / size;
+                float a = SeamlessPerlin(u, v, 5f, 9.7f, 6.4f);
+                float b = SeamlessPerlin(u, v, 13f, 21.8f, 43.2f);
+                float n = Mathf.Clamp01(a * .65f + b * .35f);
+                byte c = (byte)Mathf.RoundToInt(n * 255f);
+                pixels[y * size + x] = new Color32(c, c, c, 255);
+            }
+            t.SetPixels32(pixels);
+            t.Apply(false, false);
+            return t;
+        }
+
+        private static float SeamlessPerlin(float u, float v, float tiles, float ox, float oy)
+        {
+            float p00 = Mathf.PerlinNoise(ox + u * tiles, oy + v * tiles);
+            float p10 = Mathf.PerlinNoise(ox + (u - 1f) * tiles, oy + v * tiles);
+            float p01 = Mathf.PerlinNoise(ox + u * tiles, oy + (v - 1f) * tiles);
+            float p11 = Mathf.PerlinNoise(ox + (u - 1f) * tiles, oy + (v - 1f) * tiles);
+            return Mathf.Lerp(Mathf.Lerp(p00, p10, u), Mathf.Lerp(p01, p11, u), v);
         }
 
         private static Texture2D GenerateGasSprite(int size)

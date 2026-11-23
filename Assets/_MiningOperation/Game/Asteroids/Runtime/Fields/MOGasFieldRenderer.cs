@@ -262,18 +262,26 @@ namespace MiningOperation.Asteroids
                 ? anchor.visuals.gasVolumeMaterialOverride
                 : anchor.settings != null ? anchor.settings.gasVolumeMaterial : null;
             bool groundMode = anchor.gasPresentation == MOGasPresentation.GroundFog;
+            bool fastGroundMode = groundMode && anchor.groundFogQuality == MOGroundFogQuality.FastSurface;
             if (groundMode)
             {
-                volume = anchor.visuals != null && anchor.visuals.groundFogMaterialOverride != null
-                    ? anchor.visuals.groundFogMaterialOverride
-                    : anchor.settings != null ? anchor.settings.groundFogMaterial : null;
+                if (fastGroundMode)
+                    volume = anchor.visuals != null && anchor.visuals.groundFogFastMaterialOverride != null
+                        ? anchor.visuals.groundFogFastMaterialOverride
+                        : anchor.settings != null ? anchor.settings.groundFogFastMaterial : null;
+                else
+                    volume = anchor.visuals != null && anchor.visuals.groundFogMaterialOverride != null
+                        ? anchor.visuals.groundFogMaterialOverride
+                        : anchor.settings != null ? anchor.settings.groundFogMaterial : null;
             }
             bool requestedVolume = anchor.gasPresentation != MOGasPresentation.SoftParticles;
+            string expectedShader = fastGroundMode ? "MiningOperation/GroundFogFastURP" :
+                groundMode ? "MiningOperation/GroundFogURP" : "MiningOperation/GasVolumeURP";
             bool volumeValid = volume != null && volume.shader != null && volume.shader.isSupported &&
-                volume.shader.name == (groundMode ? "MiningOperation/GroundFogURP" : "MiningOperation/GasVolumeURP");
+                volume.shader.name == expectedShader;
             if (requestedVolume && volumeValid)
             {
-                BuildVolumeVisuals(anchor, volume, groundMode);
+                BuildVolumeVisuals(anchor, volume, groundMode, fastGroundMode);
                 RemoveGeneratedChild(ChildName);
                 isVolumeActive = true;
                 SyncVisualVisibility();
@@ -375,7 +383,7 @@ namespace MiningOperation.Asteroids
             // The system has no emission: all gas billboards come from SetParticles.
         }
 
-        private void BuildVolumeVisuals(AsteroidFieldSpawnPoint anchor, Material volumeMaterial, bool groundMode)
+        private void BuildVolumeVisuals(AsteroidFieldSpawnPoint anchor, Material volumeMaterial, bool groundMode, bool fastGroundMode)
         {
             Transform existing = transform.Find(VolumeChildName);
             GameObject go;
@@ -391,19 +399,27 @@ namespace MiningOperation.Asteroids
             if (renderer == null) renderer = go.AddComponent<MeshRenderer>();
 
             var oldMesh = filter.sharedMesh;
-            var newMesh = groundMode
-                ? MOGroundFogMeshBuilder.Build(snapshot, transform, anchor.groundFogFloorY,
+            var newMesh = fastGroundMode
+                ? MOGroundFogSurfaceMeshBuilder.Build(snapshot, transform, anchor.groundFogFloorY,
                     anchor.groundFogHeightMeters, anchor.groundFogRadiusMultiplier,
-                    cloudletsPerCluster: anchor.groundFogCloudletsPerCluster,
-                    heightVariation: anchor.groundFogHeightVariation,
-                    cloudletSpread: anchor.groundFogCloudletSpread)
-                : MOGasVolumeMeshBuilder.Build(snapshot);
+                    resolution: anchor.groundFogSurfaceResolution,
+                    breakup: anchor.groundFogBreakup,
+                    cutouts: anchor.groundFogCutouts,
+                    heightVariation: anchor.groundFogHeightVariation)
+                : groundMode
+                    ? MOGroundFogMeshBuilder.Build(snapshot, transform, anchor.groundFogFloorY,
+                        anchor.groundFogHeightMeters, anchor.groundFogRadiusMultiplier,
+                        cloudletsPerCluster: anchor.groundFogCloudletsPerCluster,
+                        heightVariation: anchor.groundFogHeightVariation,
+                        cloudletSpread: anchor.groundFogCloudletSpread)
+                    : MOGasVolumeMeshBuilder.Build(snapshot);
             newMesh.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
             filter.sharedMesh = newMesh;
             generatedVolumeMesh = newMesh;
             if (oldMesh != null && oldMesh != newMesh &&
                 (oldMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName ||
-                 oldMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName) &&
+                 oldMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName ||
+                 oldMesh.name == MOGroundFogSurfaceMeshBuilder.GeneratedMeshName) &&
                 (oldMesh.hideFlags & HideFlags.DontSaveInEditor) != 0)
                 DestroyGeneratedMesh(oldMesh);
 
@@ -468,7 +484,8 @@ namespace MiningOperation.Asteroids
                 var filter = item.GetComponent<MeshFilter>();
                 if (filter != null && filter.sharedMesh != null &&
                     (filter.sharedMesh.name == MOGasVolumeMeshBuilder.GeneratedMeshName ||
-                     filter.sharedMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName) &&
+                     filter.sharedMesh.name == MOGroundFogMeshBuilder.GeneratedMeshName ||
+                     filter.sharedMesh.name == MOGroundFogSurfaceMeshBuilder.GeneratedMeshName) &&
                     (filter.sharedMesh.hideFlags & HideFlags.DontSaveInEditor) != 0)
                 {
                     Mesh existing = filter.sharedMesh;

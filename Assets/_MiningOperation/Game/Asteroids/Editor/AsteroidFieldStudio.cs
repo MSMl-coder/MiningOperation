@@ -508,10 +508,14 @@ namespace MiningOperation.Asteroids.Editor
                 Prop(local, "gasPresentation", "Rendering mode");
                 var presentation = (MOGasPresentation)local.FindProperty("gasPresentation").enumValueIndex;
                 bool volumeMode = presentation != MOGasPresentation.SoftParticles;
+                bool groundMode = presentation == MOGasPresentation.GroundFog;
+                if (groundMode) Prop(local, "groundFogQuality", "Fog rendering quality");
+                bool fastFog = groundMode &&
+                    local.FindProperty("groundFogQuality").enumValueIndex == (int)MOGroundFogQuality.FastSurface;
                 if (volumeMode)
                 {
-                    Prop(local, "gasVolumeSteps", "Raymarch samples");
-                    Prop(local, "gasVolumeNoiseScale", "3D noise scale");
+                    if (!fastFog) Prop(local, "gasVolumeSteps", "Raymarch samples (expensive)");
+                    Prop(local, "gasVolumeNoiseScale", fastFog ? "Noise texture scale" : "3D noise scale");
                     Prop(local, "gasVolumeBrightness", "Brightness");
                     if (presentation == MOGasPresentation.GroundFog)
                     {
@@ -522,14 +526,55 @@ namespace MiningOperation.Asteroids.Editor
                         Prop(local, "groundFogRadiusMultiplier", "Horizontal radius multiplier");
                         Prop(local, "groundFogTopSoftness", "Soft upper fade");
                         EditorGUILayout.Space(4f);
-                        Header("Cloudlet formation (no gas-record rebuild)");
-                        Prop(local, "groundFogCloudletsPerCluster", "Small clouds per cluster");
-                        Prop(local, "groundFogHeightVariation", "Cloud top height variation");
-                        Prop(local, "groundFogCloudletSpread", "Cloudlet spread");
-                        Prop(local, "groundFogBreakup", "Cloud shape irregularity");
-                        Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
+                        if (fastFog)
+                        {
+                            Header("Fast fog surface (one mesh / zero raymarching)");
+                            Prop(local, "groundFogSurfaceResolution", "Surface grid resolution");
+                            Prop(local, "groundFogHeightVariation", "Cloud top height variation");
+                            Prop(local, "groundFogBreakup", "Cloud shape irregularity");
+                            Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
+                            EditorGUILayout.HelpBox("FAST surface: one top-facing cloud mesh per location, one 2D noise texture sample per pixel. No ray marching or overlapping volumetric shells. Best for a camera above fog. Old volumetric appearance is still available under Quality = VolumetricCloudlets.", MessageType.Info);
+                            if (selected.settings != null &&
+                                (selected.settings.groundFogFastMaterial == null ||
+                                 selected.settings.groundFogFastMaterial.shader == null ||
+                                 !selected.settings.groundFogFastMaterial.shader.isSupported))
+                            {
+                                if (GUILayout.Button("INSTALL FAST FOG MATERIAL (keep existing layout)"))
+                                {
+                                    var anchorForInstall = selected;
+                                    EditorApplication.delayCall += () =>
+                                    {
+                                        if (anchorForInstall == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+                                        try
+                                        {
+                                            if (MOVisualAssetInstaller.Install(anchorForInstall.settings))
+                                            {
+                                                var gasRenderer = anchorForInstall.GetComponent<MOGasFieldRenderer>();
+                                                if (gasRenderer != null && gasRenderer.Snapshot != null)
+                                                {
+                                                    gasRenderer.RebuildVisuals();
+                                                    EditorUtility.SetDirty(gasRenderer);
+                                                }
+                                                if (anchorForInstall.gameObject.scene.IsValid())
+                                                    EditorSceneManager.MarkSceneDirty(anchorForInstall.gameObject.scene);
+                                            }
+                                        }
+                                        catch (Exception ex) { Debug.LogException(ex, anchorForInstall); }
+                                    };
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Header("Volumetric cloudlets (GPU expensive)");
+                            Prop(local, "groundFogCloudletsPerCluster", "Small clouds per cluster");
+                            Prop(local, "groundFogHeightVariation", "Cloud top height variation");
+                            Prop(local, "groundFogCloudletSpread", "Cloudlet spread");
+                            Prop(local, "groundFogBreakup", "Cloud shape irregularity");
+                            Prop(local, "groundFogCutouts", "Cloud gaps / empty pockets");
+                            EditorGUILayout.HelpBox("The old volumetric quality uses multiple raymarched transparent shells and can lower FPS sharply.", MessageType.Warning);
+                        }
                         Prop(local, "groundFogLights", "Local fog lights (up to 4)");
-                        EditorGUILayout.HelpBox("Ground Fog builds many independently sized cloudlets from each saved gas cluster. Changes here rebuild only the visual mesh, never gas records. For large fields reduce Cloudlets or Raymarch samples to improve GPU performance.", MessageType.Info);
                     }
                 }
                 else
@@ -605,6 +650,17 @@ namespace MiningOperation.Asteroids.Editor
                             if (renderer == null || renderer.Snapshot == null) return;
                             try
                             {
+                                // Fast fog has a distinct material. Install it once, never overwrite legacy Gas.
+                                if (anchorToRefresh.gasPresentation == MOGasPresentation.GroundFog &&
+                                    anchorToRefresh.groundFogQuality == MOGroundFogQuality.FastSurface &&
+                                    anchorToRefresh.settings != null &&
+                                    (anchorToRefresh.settings.groundFogFastMaterial == null ||
+                                     anchorToRefresh.settings.groundFogFastMaterial.shader == null ||
+                                     !anchorToRefresh.settings.groundFogFastMaterial.shader.isSupported))
+                                {
+                                    if (!MOVisualAssetInstaller.Install(anchorToRefresh.settings))
+                                        return;
+                                }
                                 renderer.RebuildVisuals();
                                 EditorUtility.SetDirty(renderer);
                                 if (anchorToRefresh.gameObject.scene.IsValid())
@@ -834,7 +890,10 @@ namespace MiningOperation.Asteroids.Editor
             if (field == null) { lastError = "Field Settings are required for the gas material."; return; }
             if (field.gasParticleMaterial == null ||
                 (selected.gasPresentation == MOGasPresentation.Volumetric && field.gasVolumeMaterial == null) ||
-                (selected.gasPresentation == MOGasPresentation.GroundFog && field.groundFogMaterial == null))
+                (selected.gasPresentation == MOGasPresentation.GroundFog &&
+                    (selected.groundFogQuality == MOGroundFogQuality.FastSurface
+                        ? field.groundFogFastMaterial == null
+                        : field.groundFogMaterial == null)))
             {
                 if (!MOVisualAssetInstaller.Install(field)) return;
             }
