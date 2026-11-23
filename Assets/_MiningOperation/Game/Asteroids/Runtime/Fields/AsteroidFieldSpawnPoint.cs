@@ -58,6 +58,12 @@ namespace MiningOperation.Asteroids
         [Min(5f)] public float groundFogHeightMeters = 180f;
         [Range(0.5f, 3f)] public float groundFogRadiusMultiplier = 1.35f;
         [Range(0.15f, 0.95f)] public float groundFogTopSoftness = 0.70f;
+        [Header("Ground Fog / Cloud Structure")]
+        [Range(1, 24)] public int groundFogCloudletsPerCluster = 12;
+        [Range(0f, 1f)] public float groundFogHeightVariation = 0.8f;
+        [Range(0f, 1f)] public float groundFogCloudletSpread = 0.8f;
+        [Range(0f, 1f)] public float groundFogBreakup = 0.85f;
+        [Range(0f, 1f)] public float groundFogCutouts = 0.55f;
         [Tooltip("Optional local Point/Spot lights illuminating this fog (max 4). Standard Gas does not use them.")]
         public Light[] groundFogLights = Array.Empty<Light>();
 
@@ -344,6 +350,11 @@ namespace MiningOperation.Asteroids
             groundFogHeightMeters = Mathf.Max(5f, groundFogHeightMeters);
             groundFogRadiusMultiplier = Mathf.Clamp(groundFogRadiusMultiplier, 0.5f, 3f);
             groundFogTopSoftness = Mathf.Clamp(groundFogTopSoftness, 0.15f, 0.95f);
+            groundFogCloudletsPerCluster = Mathf.Clamp(groundFogCloudletsPerCluster, 1, 24);
+            groundFogHeightVariation = Mathf.Clamp01(groundFogHeightVariation);
+            groundFogCloudletSpread = Mathf.Clamp01(groundFogCloudletSpread);
+            groundFogBreakup = Mathf.Clamp01(groundFogBreakup);
+            groundFogCutouts = Mathf.Clamp01(groundFogCutouts);
             SyncToController();
         }
         private void OnDrawGizmosSelected()
