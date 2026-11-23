@@ -944,8 +944,8 @@ namespace MiningOperation.Asteroids.Editor
             // Never mutate the old Spawn Point's source asset during formation creation.
             try
             {
-                if (newKind == MiningFieldContent.Gas)
-                    MOVisualAssetInstaller.Install(anchor.settings);
+                if (newKind == MiningFieldContent.Gas && !MOVisualAssetInstaller.Install(anchor.settings))
+                    Debug.LogWarning("[MO] Gas materials require repair for the new formation.", anchor);
                 else if (newKind == MiningFieldContent.Ice || newKind == MiningFieldContent.IceShelf)
                 {
                     MOVisualAssetInstaller.InstallIceResources(anchor.settings);
@@ -1001,6 +1001,11 @@ namespace MiningOperation.Asteroids.Editor
             {
                 Undo.RecordObject(selected, "Assign initial field settings");
                 selected.settings = field;
+                selected.contentType = newKind;
+                selected.formation = newKind == MiningFieldContent.IceShelf
+                    ? AsteroidFormationType.IceShelfContinents : field.formation;
+                if (newKind == MiningFieldContent.Gas)
+                    selected.gasPresentation = MOGasPresentation.Volumetric;
                 selected.SyncToController();
                 EditorUtility.SetDirty(selected);
                 EditorSceneManager.MarkSceneDirty(selected.gameObject.scene);
